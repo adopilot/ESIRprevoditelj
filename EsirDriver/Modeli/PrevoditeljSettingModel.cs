@@ -8,10 +8,13 @@ namespace EsirDriver.Modeli
 {
     public class PrevoditeljSettingModel
     {
-        public bool KoristiSe { get; set; } = false;
-        public bool Upaljen { get; set; } = false;
-        public EsirConfigModel EsirConfig { get; set; } = new EsirConfigModel() { EsirSettingsModel = new EsirSettingsModel() };
+        
+        public int TimerInterval { get; set; } = 1;
+        
+        public bool Enabled { get; set; }
+        public string Path { get; set; }
 
+        public string TypeOfMessage { get; set; }
 
     }
 }
