@@ -14,7 +14,7 @@ namespace EsirDriver
         public EsirDriverEngin(EsirConfigModel esirConfigModel) 
         { 
             _esirConfig = esirConfigModel; 
-            _httpClient = new HttpClient() { BaseAddress = new Uri(esirConfigModel?.EsirSettingsModel.webserverAddress ?? "http://127.0.0.1:3566/")};
+            _httpClient = new HttpClient() { BaseAddress = new Uri(esirConfigModel?.webserverAddress ?? "http://127.0.0.1:3566/")};
         }
 
         

@@ -12,9 +12,9 @@ namespace EsirDriver.Modeli
         public int TimerInterval { get; set; } = 1;
         
         public bool Enabled { get; set; }
-        public string Path { get; set; }
-
-        public string TypeOfMessage { get; set; }
+        public string PathInputFiles { get; set; }
+        public string PathOutputFiles { get; set; }
+        public int ReadFolderEvryMiliSec { get; set; } = 3000;
 
     }
 }
