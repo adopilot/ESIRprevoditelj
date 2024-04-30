@@ -26,15 +26,11 @@ namespace KasaKlijent
             settings.IsStatusBarEnabled = true;
             var userAgent = settings.UserAgent;
             Console.WriteLine(userAgent);
-#if DEBUG
             settings.AreBrowserAcceleratorKeysEnabled = true;
 
-#else
-                settings.AreBrowserAcceleratorKeysEnabled = false;
-
 #endif
 
-#endif
+
         }
     }
 

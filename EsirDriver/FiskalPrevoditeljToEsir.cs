@@ -18,6 +18,7 @@ namespace EsirDriver
         private EsirConfigModel esirConfig { get; set; }
         private Modeli.PrevoditeljSettingModel _prevoditeljSettings { get; set; }
 
+        private bool _jeliPrviStart { get; set; }  
         public FiskalPrevoditeljToEsir(EsirConfigModel esirConfigModel,PrevoditeljSettingModel prevoditeljSettingModel) : base(esirConfigModel)
         {
             this.esirConfig = esirConfigModel;
@@ -27,6 +28,9 @@ namespace EsirDriver
                 Start();
             }
         }
+
+        
+
 
         private async Task RunPeriodicTaskAsync()
         {
@@ -60,14 +64,14 @@ namespace EsirDriver
             }
         }
 
-        public PorukaFiskalnogPrintera Start()
+        public void Start()
         {
             // Check if the timer is already running
             if (_timer != null)
             {
                 if (_prevoditeljSettings.Enabled)
                 {
-                    return new PorukaFiskalnogPrintera() { LogLevel = Microsoft.Extensions.Logging.LogLevel.Information, Poruka = "Serivs je već upaljen", MozeNastaviti = true };
+                    return; 
                 }
 
             }
@@ -81,7 +85,8 @@ namespace EsirDriver
             _prevoditeljSettings.Enabled = true;
             
             _ = RunPeriodicTaskAsync();
-            return new PorukaFiskalnogPrintera() { LogLevel = Microsoft.Extensions.Logging.LogLevel.Information, Poruka = "Serivs je upaljen ", MozeNastaviti = true };
+
+            OnMessageReceived(new PorukaFiskalnogPrintera() { Poruka = "Serivs upaljen", LogLevel= Microsoft.Extensions.Logging.LogLevel.Information });
 
         }
 

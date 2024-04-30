@@ -13,6 +13,8 @@ namespace EsirDriver.Modeli
         public string apiKey { get; set; }
         public string webserverAddress { get; set; }
 
+        public int pin { get; set; } 
+
     }
 
 }
