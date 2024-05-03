@@ -1,4 +1,5 @@
-﻿using EsirDriver.Modeli;
+﻿using EsirDriver.Implmentacije;
+using EsirDriver.Modeli;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,23 +10,61 @@ using System.Threading.Tasks;
 
 namespace EsirDriver
 {
-    public class FiskalPrevoditeljToEsir : EsirDriverEngin
+    public class FiskalPrevoditeljToEsir 
     {
         public event EventHandler<PorukaFiskalnogPrintera>? MessageReceived;
 
-        private PeriodicTimer? _timer;
-        private Modeli.EsirConfigModel esirSettings { get; set; }= new EsirConfigModel();
-        private EsirConfigModel esirConfig { get; set; }
+        private PeriodicTimer _timer;
+        private Modeli.EsirConfigModel _esirSettings { get; set; }= new EsirConfigModel();
+        private EsirConfigModel _esirConfig { get; set; }
         private Modeli.PrevoditeljSettingModel _prevoditeljSettings { get; set; }
+        private IFiskalniPrevoditelj _fiskalniPrevoditelj;
+        private string _stateInfoMsg { get; set; } = "";
+        private bool _stateIsError { get; set; }
 
+        
+        
+
+
+
+
+
+        private EsirDriverEngin _esir;
         private bool _jeliPrviStart { get; set; }  
-        public FiskalPrevoditeljToEsir(EsirConfigModel esirConfigModel,PrevoditeljSettingModel prevoditeljSettingModel) : base(esirConfigModel)
+        public FiskalPrevoditeljToEsir(EsirConfigModel esirConfigModel,PrevoditeljSettingModel prevoditeljSettingModel) 
         {
-            this.esirConfig = esirConfigModel;
-            this._prevoditeljSettings = prevoditeljSettingModel;
-            if (_prevoditeljSettings.Enabled)
+            try
             {
-                Start();
+
+                _esir = new EsirDriverEngin(esirConfigModel);
+
+                switch (prevoditeljSettingModel.KomandePrintera)
+                {
+                    case PrevodimoKomandePrintera.TringFbih:
+                        _fiskalniPrevoditelj = new TringPrevoditelj(_esir);
+                        break;
+                    default:
+                        throw new Exception($"Tip fiskalnog printera {prevoditeljSettingModel.KomandePrintera} još nisu podržane");
+                }
+
+
+                _esirConfig = esirConfigModel;
+                _prevoditeljSettings = prevoditeljSettingModel;
+                if (_prevoditeljSettings.Enabled)
+                {
+                    _timer = new PeriodicTimer(TimeSpan.FromMilliseconds(_prevoditeljSettings?.ReadFolderEvryMiliSec??3000));
+                }
+                else
+                {
+                    _timer = new PeriodicTimer(Timeout.InfiniteTimeSpan);
+                }
+                _ = RunPeriodicTaskAsync();
+            }
+            catch (Exception ex)
+            {
+                prevoditeljSettingModel.Enabled = false;
+                _stateInfoMsg = $"Greška u kostrukotu servisa FiskalPrevoditelj {ex.Message}";
+                _stateIsError = true;
             }
         }
 
@@ -36,25 +75,25 @@ namespace EsirDriver
         {
             try
             {
-                while (await _timer.WaitForNextTickAsync() && _prevoditeljSettings.Enabled )
+                if (_jeliPrviStart)
+                {
+                    var aktivanSam =await _esir.ProvjeriDostupan();
+
+                }
+
+
+                while ( await _timer.WaitForNextTickAsync()  && _prevoditeljSettings.Enabled )
                 {
                     // Simulate some asynchronous processing
-                    await Task.Delay(1000);
+                    var poruka = await _fiskalniPrevoditelj.SatTik();
 
-                    // Create a message
-                    var message = new PorukaFiskalnogPrintera
+                    if (!(poruka?.MozeNastaviti ?? false))
                     {
-                        Poruka = $"Radim normal",
-                        IsError = false,
-                        MozeNastaviti = true,
-                        NeAutorizovan = false,
-                        NemaBezbednsniElement = false,
-                        TraziPin = false,
-                        LogLevel= Microsoft.Extensions.Logging.LogLevel.Information
-                    };
+                        Stop();
+                        OnMessageReceived(new PorukaFiskalnogPrintera() { IsError = true, Poruka = "Gasim servis jer je tako rekao  tring prvoditelj" });
+                    }
 
-                    // Raise the MessageReceived event
-                    OnMessageReceived(message);
+                    OnMessageReceived(poruka);
                 }
             }
             catch (Exception ex)
@@ -66,40 +105,24 @@ namespace EsirDriver
 
         public void Start()
         {
-            // Check if the timer is already running
-            if (_timer != null)
-            {
-                if (_prevoditeljSettings.Enabled)
-                {
-                    return; 
-                }
-
-            }
-            if (_timer == null)
-                _timer = new PeriodicTimer(TimeSpan.FromMilliseconds(_prevoditeljSettings.ReadFolderEvryMiliSec));
-
-            else
-                _timer.Period=TimeSpan.FromMilliseconds(_prevoditeljSettings.ReadFolderEvryMiliSec);
-
-            // Start the timer
+          
             _prevoditeljSettings.Enabled = true;
-            
-            _ = RunPeriodicTaskAsync();
-
+            _timer.Period = TimeSpan.FromMilliseconds(_prevoditeljSettings.ReadFolderEvryMiliSec);
             OnMessageReceived(new PorukaFiskalnogPrintera() { Poruka = "Serivs upaljen", LogLevel= Microsoft.Extensions.Logging.LogLevel.Information });
 
         }
 
         public void Stop()
         {
-            // Stop the timer
-            if (_timer !=null)
-                _timer.Period = Timeout.InfiniteTimeSpan;
-            
-            _timer = null;
             _prevoditeljSettings.Enabled = false;
+            _timer.Period = Timeout.InfiniteTimeSpan;
+            OnMessageReceived(new PorukaFiskalnogPrintera() { Poruka = "Serivs Ugašen", LogLevel = Microsoft.Extensions.Logging.LogLevel.Information });
         }
 
+        public PorukaFiskalnogPrintera GetState()
+        {
+            return new PorukaFiskalnogPrintera() { LogLevel= Microsoft.Extensions.Logging.LogLevel.Information, MozeNastaviti=, Poruka=prevoditeljStateInfo}
+        }
 
         protected virtual void OnMessageReceived(PorukaFiskalnogPrintera poruka)
         {
