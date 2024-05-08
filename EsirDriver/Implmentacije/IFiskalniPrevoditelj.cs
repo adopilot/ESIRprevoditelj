@@ -9,6 +9,8 @@ namespace EsirDriver.Implmentacije
 {
     internal interface IFiskalniPrevoditelj
     {
+        event EventHandler<PorukaFiskalnogPrintera> PorukaEvent;
         Task<PorukaFiskalnogPrintera> SatTik();
+
     }
 }

@@ -13,6 +13,34 @@
 
             servis.MessageReceived += Servis_MessageReceived;
 
+            pocetak:
+            Console.WriteLine($"Odaberite opicju:" +
+                $"\nZa pokretanje servisa prisnite 1" +
+                $"\nZa stoprianje servisa pritsnite 2" +
+                $"\nZa konfiguraciju servisa prisnite 3" +
+                $"\nZa izlaz iz aplikcije prisnite 0");
+
+            string opcija = Console.ReadLine()??"";
+
+            switch (opcija)
+            {
+                case "1":
+                    servis.Start();
+                break;
+                case "2":
+                    servis.Stop(); 
+                break;
+                    case "3":
+                    await servis.Konfigurisi(esirSettings, prevoditeljSettings);
+                    break;
+                case "0":
+                    Environment.Exit(0);
+                    break;
+                default:
+                    goto pocetak;
+            }
+            goto pocetak;
+            /*
             await Task.Delay(10000);
             servis.Start();
             Console.WriteLine("Upalio servis ponov");
@@ -27,7 +55,9 @@
             Console.WriteLine("Upalio servis treci put");
 
             Console.WriteLine("Sisni bilo koje dugme da zavšima");
-            Console.ReadKey();
+            */
+            
+        
         }
 
         private static void Servis_MessageReceived(object? sender, EsirDriver.Modeli.PorukaFiskalnogPrintera e)
@@ -36,3 +66,4 @@
         }
     }
 }
+
