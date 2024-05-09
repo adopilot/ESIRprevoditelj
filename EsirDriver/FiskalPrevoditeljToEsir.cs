@@ -45,7 +45,7 @@ namespace EsirDriver
         {
             try
             {
-                while (_prevoditeljSettings.Enabled && await _timer.WaitForNextTickAsync()  )
+                while (await _timer.WaitForNextTickAsync() && _prevoditeljSettings.Enabled)
                 {
                     // Simulate some asynchronous processing
                     var poruka = await _fiskalniPrevoditelj.SatTik();
@@ -66,7 +66,7 @@ namespace EsirDriver
                 _stateIsError = true;
 
 
-                PorukaFiskalnogPrintera porukaFiskalnogPrintera = new PorukaFiskalnogPrintera() { IsError = true, LogLevel = Microsoft.Extensions.Logging.LogLevel.Error, Poruka = ex.Message };
+                PorukaFiskalnogPrintera porukaFiskalnogPrintera = new PorukaFiskalnogPrintera() { IsError = true, LogLevel = Microsoft.Extensions.Logging.LogLevel.Debug, Poruka = ex.Message };
                 OnMessageReceived(porukaFiskalnogPrintera);
             }
         }

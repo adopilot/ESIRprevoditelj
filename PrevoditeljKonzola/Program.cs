@@ -34,6 +34,7 @@
                     await servis.Konfigurisi(esirSettings, prevoditeljSettings);
                     break;
                 case "0":
+                    servis.Stop();
                     Environment.Exit(0);
                     break;
                 default:
