@@ -1,4 +1,6 @@
-﻿namespace PrevoditeljKonzola
+﻿using System.Text;
+
+namespace PrevoditeljKonzola
 {
     internal class Program
     {
@@ -8,7 +10,14 @@
 
             //var prevo new EsirDriver.Modeli.EsirSettingsModel() { apiKey = "adoa" }
             var esirSettings = new EsirDriver.Modeli.EsirConfigModel();
-            var prevoditeljSettings = new EsirDriver.Modeli.PrevoditeljSettingModel() { ReadFolderEvryMiliSec=3000, Enabled = true,PathInputFiles="C:\\HCP\\TO_FP" , PathOutputFiles = "C:\\HCP\\FROM_FP" };
+            var prevoditeljSettings = new EsirDriver.Modeli.PrevoditeljSettingModel() {
+                AutomaticallyCloseRecept = true,
+                KomandePrintera = EsirDriver.Modeli.PrevodimoKomandePrintera.HcpFBiH,
+                ReadFolderEvryMiliSec = 500,
+                Enabled = true, PathInputFiles = "C:\\HCP\\TO_FP",
+                PathOutputFiles = "C:\\HCP\\FROM_FP",
+                EncodingName = "windows-1250"
+            };
             EsirDriver.FiskalPrevoditeljToEsir servis = new EsirDriver.FiskalPrevoditeljToEsir(esirSettings,prevoditeljSettings);
 
             servis.MessageReceived += Servis_MessageReceived;
@@ -18,6 +27,7 @@
                 $"\nZa pokretanje servisa prisnite 1" +
                 $"\nZa stoprianje servisa pritsnite 2" +
                 $"\nZa konfiguraciju servisa prisnite 3" +
+                $"\nDebug kreiraj cmd.OK HCP datokeu sitni 4" +
                 $"\nZa izlaz iz aplikcije prisnite 0");
 
             string opcija = Console.ReadLine()??"";
@@ -32,6 +42,10 @@
                 break;
                     case "3":
                     await servis.Konfigurisi(esirSettings, prevoditeljSettings);
+                    break;
+
+                    case "4":
+                        await KreateCmdOkFile(prevoditeljSettings.PathInputFiles);
                     break;
                 case "0":
                     servis.Stop();
@@ -60,7 +74,14 @@
             
         
         }
-
+        private static async Task KreateCmdOkFile(string inputFolder)
+        {
+            string filePath = Path.Combine(inputFolder, "cmd.ok");
+            using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
+            {
+                await writer.WriteAsync("");
+            }
+        }
         private static void Servis_MessageReceived(object? sender, EsirDriver.Modeli.PorukaFiskalnogPrintera e)
         {
             Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} {(e.IsError?"Greška je nakva":"")} poruika: {e.Poruka} {e.LogLevel}");

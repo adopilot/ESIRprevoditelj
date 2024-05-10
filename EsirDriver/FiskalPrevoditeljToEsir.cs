@@ -94,8 +94,8 @@ namespace EsirDriver
 
                 switch (prevoditeljSettingModel.KomandePrintera)
                 {
-                    case PrevodimoKomandePrintera.TringFbih:
-                        _fiskalniPrevoditelj = new TringPrevoditelj(_esir,_prevoditeljSettings);
+                    case PrevodimoKomandePrintera.HcpFBiH:
+                        _fiskalniPrevoditelj = new HCPPrevoditelj(_esir,_prevoditeljSettings);
                         break;
                     default:
                         _stateInfoMsg = $"Tip fiskalnog printera {prevoditeljSettingModel.KomandePrintera} još nisu podržane";
@@ -171,7 +171,7 @@ namespace EsirDriver
             MessageReceived?.Invoke(this, poruka);
         }
 
-
+        
 
 
 

@@ -13,14 +13,16 @@ namespace EsirDriver.Modeli
         public string PathInputFiles { get; set; }
         public string PathOutputFiles { get; set; }
         public int ReadFolderEvryMiliSec { get; set; } = 3000;
-        public bool AutomaticallyCloseRecept { get; set; }
-        public PrevodimoKomandePrintera KomandePrintera { get; set; }= PrevodimoKomandePrintera.TringFbih;
+        public bool AutomaticallyCloseRecept { get; set; } = true;
+
+        public string EncodingName { get; set; } = "UTF-8";
+        public PrevodimoKomandePrintera KomandePrintera { get; set; }= PrevodimoKomandePrintera.HcpFBiH;
 
     }
 
     public enum PrevodimoKomandePrintera
     {
-        TringFbih =0,
+        HcpFBiH =0,
         GalebFisLink = 1,
         MikroElektornikaFLink =2
     }
