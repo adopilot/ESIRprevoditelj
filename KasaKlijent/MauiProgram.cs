@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using EsirDriver;
+using Microsoft.Extensions.Logging;
 
 namespace KasaKlijent
 {
@@ -15,6 +16,12 @@ namespace KasaKlijent
                 });
 
             builder.Services.AddMauiBlazorWebView();
+
+            FiskalPrevoditeljToEsir fiskalPrevoditeljToEsir = new FiskalPrevoditeljToEsir(new EsirDriver.Modeli.EsirConfigModel(), new EsirDriver.Modeli.PrevoditeljSettingModel() { PathInputFiles="inicijalizacija" });
+
+            builder.Services.AddSingleton<FiskalPrevoditeljToEsir>(fiskalPrevoditeljToEsir);
+            
+                
 
 #if DEBUG
     		builder.Services.AddBlazorWebViewDeveloperTools();

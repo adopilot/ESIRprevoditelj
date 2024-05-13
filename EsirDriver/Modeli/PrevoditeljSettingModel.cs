@@ -15,7 +15,7 @@ namespace EsirDriver.Modeli
         public int ReadFolderEvryMiliSec { get; set; } = 3000;
         public bool AutomaticallyCloseRecept { get; set; } = true;
 
-        public string EncodingName { get; set; } = "UTF-8";
+        public string EncodingName { get; set; } = "windows-1250";
         public PrevodimoKomandePrintera KomandePrintera { get; set; }= PrevodimoKomandePrintera.HcpFBiH;
 
     }

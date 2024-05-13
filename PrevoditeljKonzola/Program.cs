@@ -41,7 +41,8 @@ namespace PrevoditeljKonzola
                     servis.Stop(); 
                 break;
                     case "3":
-                    await servis.Konfigurisi(esirSettings, prevoditeljSettings);
+                    var poruka = await servis.Konfigurisi(esirSettings, prevoditeljSettings);
+                    Servis_MessageReceived(null, poruka);
                     break;
 
                     case "4":
@@ -84,7 +85,10 @@ namespace PrevoditeljKonzola
         }
         private static void Servis_MessageReceived(object? sender, EsirDriver.Modeli.PorukaFiskalnogPrintera e)
         {
-            Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} {(e.IsError?"Greška je nakva":"")} poruika: {e.Poruka} {e.LogLevel}");
+            if (e.LogLevel >= Microsoft.Extensions.Logging.LogLevel.Debug)
+            {
+                Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Log level {e.LogLevel} {(e.IsError ? "Greška je nakva" : "")} poruika: {e.Poruka} ");
+            }
         }
     }
 }

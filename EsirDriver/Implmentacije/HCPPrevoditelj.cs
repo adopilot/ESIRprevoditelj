@@ -8,6 +8,8 @@ using Microsoft.Extensions.Logging;
 using EsirDriver.Modeli.hcp;
 using System.Xml;
 using System.Reflection.PortableExecutable;
+using System.Reflection.Metadata;
+using System.IO;
 
 namespace EsirDriver.Implmentacije
 {
@@ -17,8 +19,9 @@ namespace EsirDriver.Implmentacije
         private readonly PrevoditeljSettingModel _prevoditeljSettingModel;
         private List<HcpFooterRowModel> _footerRows = new List<HcpFooterRowModel>();
         private List<HcpClientRowModel> _clients = new List<HcpClientRowModel>();
+        private HcpClientRowModel _client;
         private readonly Encoding encoding;
-
+        private string _lastFiscalNumber = "0";
 
         public event EventHandler<PorukaFiskalnogPrintera> PorukaEvent;
 
@@ -47,7 +50,7 @@ namespace EsirDriver.Implmentacije
             bool imamCmdOkFile = false;
             var files = Directory.GetFiles(_prevoditeljSettingModel.PathInputFiles)?.ToList() ?? new List<string>();
 
-            if (!files.Any()) { return new PorukaFiskalnogPrintera() { MozeNastaviti = true, LogLevel = LogLevel.Debug, Poruka = "Folder mi je prazan" }; }
+            if (!files.Any()) { return new PorukaFiskalnogPrintera() { MozeNastaviti = true, LogLevel = LogLevel.Trace, Poruka = "Folder mi je prazan" }; }
 
             foreach (var file in files)
             {
@@ -60,7 +63,7 @@ namespace EsirDriver.Implmentacije
                         deleteCmdOkFile();
                         return new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Debug, Poruka = "U folderu sam našao samo cmd.ok i brišem je ", MozeNastaviti = true };
                     }
-                    PorukaEvent.Invoke(this, new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Debug, Poruka = "Imam cmd file i obrađujem ostale datoeke ", MozeNastaviti = true });
+                    PorukaEvent.Invoke(this, new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Trace, Poruka = "Imam cmd file i obrađujem ostale datoeke ", MozeNastaviti = true });
                 }
 
             }
@@ -111,18 +114,63 @@ namespace EsirDriver.Implmentacije
                     await OdgovoriIObrisi(fileFullPath, true, $"Plu komande nisu implenetriane");
                     return new PorukaFiskalnogPrintera() { IsError = true , MozeNastaviti= true, LogLevel= LogLevel.Error, Poruka=$"PLU komande nisu podržane prevoiteljem u ovoj ! Možda da se obratite na https://github.com/adopilot/ESIRprevoditelj" };
                 }
+                else
+                {
+                    await OdgovoriIObrisi(fileFullPath, true, $"Datoka {file} nije podržana prevoiteljem ");
+                    return new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = true, LogLevel = LogLevel.Error, Poruka = $"Prevoidtelj ne podržava datku {file}" };
+                }
             }
 
             //deleteCmdOkFile();
 
             //PorukaEvent?.Invoke(this, new PorukaFiskalnogPrintera() { IsError = false, MozeNastaviti = true, LogLevel = LogLevel.Debug, Poruka = "Ovo je resendani event" });            
-            return new PorukaFiskalnogPrintera() { LogLevel = Microsoft.Extensions.Logging.LogLevel.Debug, MozeNastaviti = true, Poruka = "Odradio sam klik sata" };
+            return new PorukaFiskalnogPrintera() { LogLevel = Microsoft.Extensions.Logging.LogLevel.Trace, MozeNastaviti = true, Poruka = "Odradio sam klik sata" };
         }
 
         private async Task<PorukaFiskalnogPrintera> OdradiCmdDatoteku(string fileFullPath)
         {
-            await OdgovoriIObrisi(fileFullPath, false, "To je to");
-            return new PorukaFiskalnogPrintera() { IsError = false, LogLevel = LogLevel.Debug, MozeNastaviti = true, Poruka = "Odardli smo cmd datoku" };
+            string xmlContent;
+            using (StreamReader sr = new StreamReader(fileFullPath, encoding))
+            {
+                xmlContent = await sr.ReadToEndAsync();
+            }
+
+            // Parse the XML content
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xmlContent);
+
+            // Get the root element
+            XmlElement root = doc.DocumentElement;
+
+
+            string cmdTxt = string.Empty;
+
+
+            foreach (XmlNode node in root.ChildNodes)
+            {
+                if (node.Name == "DATA")
+                {
+                    cmdTxt = node?.Attributes?["CMD"]?.Value?? "NEPOZNATA KOMANDA";
+                }
+            }
+            
+            switch (cmdTxt)
+            {
+                case "RECEIPT_STATE":
+                    await ObradiCmdReceptState(fileFullPath);
+                break;
+                case "SET_CLIENT":
+                    //await OdradiCmdSetClinet(fileFullPath);
+                    await OdgovoriIObrisi(fileFullPath, false, $"Obrađijem CMD datokeuk sa komandom {cmdTxt}");
+                    break;
+                default:
+                    await OdgovoriIObrisi(fileFullPath, false, $"Obrađijem CMD datokeuk sa komandom {cmdTxt}");
+                break;
+            }
+
+
+
+            return new PorukaFiskalnogPrintera() { IsError = false, LogLevel = LogLevel.Debug, MozeNastaviti = true, Poruka = $"Odrali smo cmd datkeu {cmdTxt}" };
         }
 
         private async Task<PorukaFiskalnogPrintera> OdradiRCPDaoteku(string fileFullPath)
@@ -142,7 +190,7 @@ namespace EsirDriver.Implmentacije
                 {
                     //tempiramo račun ovo nećemo implentirati do daljenjg
                 }
-                //throw new Exception("RCP exception žćčđš ŽĆČĐŠ ");
+                File.Copy(fileFullPath, Path.Combine("C:\\HCP\\to_fp\\tring_temp", fileName));
                 await OdgovoriIObrisi(fileFullPath, false, "Oštaman rn ");
                 return new PorukaFiskalnogPrintera() { Poruka = $"Oradio sam rcp {fileName} datoku", LogLevel = LogLevel.Debug, MozeNastaviti = true };
             }
@@ -183,19 +231,16 @@ namespace EsirDriver.Implmentacije
 
                 // Get the root element
                 XmlElement root = doc.DocumentElement;
-
-                
-
                 
                 foreach (XmlNode node in root.ChildNodes)
                 {
                     if (node.Name == "DATA")
                     {
                         // Get the TEXT attribute value
-                        string ibk = node.Attributes["IBK"].Value;
-                        string name = node.Attributes["IBK"].Value;
-                        string address = node.Attributes["IBK"].Value;
-                        string town = node.Attributes["IBK"].Value;
+                        string ibk = node?.Attributes?["IBK"]?.Value?? "0000000000000";
+                        string name = node?.Attributes?["NAME"]?.Value??"Kupac";
+                        string address = node?.Attributes?["ADDRESS"]?.Value??"Adrsa";
+                        string town = node?.Attributes?["TOWN"]?.Value ?? "Grad";
                         _clients.Add(new HcpClientRowModel() { Address=address, Ibk=ibk, Name=name, Town=town });
                     }
                 }
@@ -204,7 +249,7 @@ namespace EsirDriver.Implmentacije
                     Console.WriteLine("Klinet: " + row.Name);
                 }
                 await OdgovoriIObrisi(fileFullPath, false, "");
-                return new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Debug, MozeNastaviti = true, Poruka = "Obradili smo datoteku" };
+                return new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Debug, MozeNastaviti = true, Poruka = "Obradili smo clinets.xml datoteku" };
             }
             catch (Exception ex)
             {
@@ -217,8 +262,8 @@ namespace EsirDriver.Implmentacije
         {
             try
             {
-                // Read the XML file asynchronously
                 
+                _footerRows = new List<HcpFooterRowModel>();
 
                 string xmlContent;
                 using (StreamReader sr = new StreamReader(fileFullPath, encoding))
@@ -233,7 +278,7 @@ namespace EsirDriver.Implmentacije
                 // Get the root element
                 XmlElement root = doc.DocumentElement;
 
-                _footerRows = new List<HcpFooterRowModel>();
+               
 
                 // Iterate through each DATA element
                 foreach (XmlNode node in root.ChildNodes)
@@ -241,10 +286,10 @@ namespace EsirDriver.Implmentacije
                     if (node.Name == "DATA")
                     {
                         // Get the TEXT attribute value
-                        string text = node.Attributes["TEXT"]?.Value??"";
+                        string text = node?.Attributes?["TEXT"]?.Value??"";
 
                         bool bold = false;
-                        bool.TryParse(node.Attributes["BOLD"]?.Value?? "false", out bold);
+                        bool.TryParse(node?.Attributes?["BOLD"]?.Value ?? "false", out bold);
                         _footerRows.Add(new HcpFooterRowModel { Data = text, Bold = bold });
                     }
                 }
@@ -252,10 +297,10 @@ namespace EsirDriver.Implmentacije
                 //TODO: Prebaci u trace model
                 foreach (var row in _footerRows)
                 {
-                    Console.WriteLine("Data: " + row.Data);
+                    Console.WriteLine("Imam Footer data: " + row.Data);
                 }
                 await OdgovoriIObrisi(fileFullPath, false, "");
-                return new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Debug, MozeNastaviti = true, Poruka = "Obradili smo datoteku" };
+                return new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Debug, MozeNastaviti = true, Poruka = $"Učitali smo footer datoku sa {_footerRows.Count} redova" };
             }
             catch (Exception ex)
             {
@@ -289,7 +334,7 @@ namespace EsirDriver.Implmentacije
                     if (node.Name == "DATA")
                     {
                         // Get the TEXT attribute value
-                        string text = node?.Attributes["TXT"]?.Value ??"";
+                        string text = node?.Attributes?["TXT"]?.Value ??"";
 
                         if (!string.IsNullOrEmpty(text))
                             nefiskalniTekst += $"{text}{Environment.NewLine}";
@@ -298,7 +343,13 @@ namespace EsirDriver.Implmentacije
                 }
 
                 //TODO: Send nefisalni tekst prema esiru;
-                Console.WriteLine("Nefiskalni tekst je: \n" + nefiskalniTekst);
+                PorukaEvent.Invoke(this, new PorukaFiskalnogPrintera()
+                {
+                    LogLevel = LogLevel.Trace,
+                    Poruka= "Nefiskalni tekst je: \n" + nefiskalniTekst,
+                     IsError=false,
+                     MozeNastaviti = true
+                });
                 await OdgovoriIObrisi(fileFullPath, false, "");
                 return new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Debug, MozeNastaviti = true, Poruka = "Obradili smo nefiskalni tekst datoku" };
 
@@ -311,9 +362,7 @@ namespace EsirDriver.Implmentacije
         }
         private async Task  OdgovoriIObrisi(string fileFullPath, bool greskaLiJe, string content)
         {
-            File.Delete(fileFullPath);
-            deleteCmdOkFile();
-
+            
             
 
             var fileNameNoExt =  Path.GetFileNameWithoutExtension(fileFullPath);
@@ -325,7 +374,69 @@ namespace EsirDriver.Implmentacije
             {
                 await writer.WriteAsync(content??"");
             }
+            File.Delete(fileFullPath);
+            deleteCmdOkFile();
 
+
+        }
+        private async Task ObradiCmdReceptState(string fileFullPath)
+        {
+            try
+            {
+
+                XmlDocument xmlDoc = new XmlDocument();
+                XmlDeclaration xmlDeclaration = xmlDoc.CreateXmlDeclaration("1.0", encoding.ToString(), "yes");
+                XmlElement root = xmlDoc.CreateElement("RECEIPT_STATE");
+                root.SetAttribute("AMOUNT", "-1");
+                root.SetAttribute("DIFFERENCE", "-1");
+
+                //TODO: Ovo ritam učitava nazad ostalo mislim da je nevažno pošalji ali prvo stpasi state
+                root.SetAttribute("RECEIPT_NUMBER", $"{_lastFiscalNumber}");
+                root.SetAttribute("REFOUND_RECEIPT_NUMBER", "0");
+                root.SetAttribute("RECEIPT_TO_REFUND", "0");
+                root.SetAttribute("NUM_PAY", "6");
+                root.SetAttribute("NUM_PLU", "0");
+                root.SetAttribute("CLIENT", "0");
+                root.SetAttribute("CASHIER", "255");
+                root.SetAttribute("FISCAL_DAY_STARTED", "false");
+                root.SetAttribute("FISCAL_RECEIPT_STARTED", "false");
+                root.SetAttribute("REFOUND_MODE", "false");
+
+                for (int i = 0; i < 6; i++)
+                {
+                    XmlElement payElement = xmlDoc.CreateElement("PAY");
+                    payElement.SetAttribute("AMOUNT", "0");
+                    root.AppendChild(payElement);
+                }
+
+                xmlDoc.AppendChild(root);
+
+                var filePath = Path.Combine(_prevoditeljSettingModel.PathOutputFiles, "bill_state.xml");
+
+                if (File.Exists(filePath))
+                    File.Delete(filePath);
+
+                using (FileStream fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 4096, useAsync: true))
+                {
+                    await WriteXmlToStreamAsync(xmlDoc, fileStream);
+                }
+
+                await OdgovoriIObrisi(fileFullPath, false, "");
+            }
+            catch (Exception ex)
+            {
+                PorukaEvent.Invoke(this, new PorukaFiskalnogPrintera() { IsError = true , LogLevel= LogLevel.Error, MozeNastaviti=true, Poruka=$"Greška u odgovru recept state komande ex: {ex.Message}"});
+                await OdgovoriIObrisi(fileFullPath, true, "Greška u generisanju  odgovra recept_state ");
+            }
+
+        }
+        async Task WriteXmlToStreamAsync(XmlDocument xmlDoc, Stream stream)
+        {
+            using (XmlWriter writer = XmlWriter.Create(stream, new XmlWriterSettings { Async = true, Encoding = encoding }))
+            {
+                xmlDoc.WriteTo(writer);
+                await writer.FlushAsync();
+            }
         }
     }
 }

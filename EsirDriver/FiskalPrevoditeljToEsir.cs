@@ -95,6 +95,17 @@ namespace EsirDriver
                 switch (prevoditeljSettingModel.KomandePrintera)
                 {
                     case PrevodimoKomandePrintera.HcpFBiH:
+                         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                        try
+                        {
+                            var encoding = Encoding.GetEncoding(prevoditeljSettingModel?.EncodingName ?? "Nije Setovano");
+                        }
+                        catch (Exception ex)
+                        {
+                           var encodingSex = new PorukaFiskalnogPrintera() { IsError=true, LogLevel= Microsoft.Extensions.Logging.LogLevel.Warning, MozeNastaviti= false, Poruka=$"Postavke za enkoing xml fajlova nisu ispravne greška {ex.Message}" };
+                            OnMessageReceived(encodingSex);
+                            return encodingSex;
+                        }
                         _fiskalniPrevoditelj = new HCPPrevoditelj(_esir,_prevoditeljSettings);
                         break;
                     default:
@@ -148,7 +159,7 @@ namespace EsirDriver
                 _preplacenNaEventePrevoditelja = true;
             }
             _timer.Period = TimeSpan.FromMilliseconds(_prevoditeljSettings.ReadFolderEvryMiliSec);
-            OnMessageReceived(new PorukaFiskalnogPrintera() { Poruka = "Pokrećem serivs", LogLevel= Microsoft.Extensions.Logging.LogLevel.Information });
+            OnMessageReceived(new PorukaFiskalnogPrintera() { Poruka = "Pokrećem serivs", LogLevel= Microsoft.Extensions.Logging.LogLevel.Trace });
 
         }
 
@@ -173,7 +184,10 @@ namespace EsirDriver
 
         
 
-
+        public PrevoditeljSettingModel GetPrevoditeljConfig()
+        {
+            return _prevoditeljSettings;
+        }
 
     }
 }

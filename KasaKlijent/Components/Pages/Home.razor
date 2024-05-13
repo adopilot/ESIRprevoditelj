@@ -1,13 +1,17 @@
 ﻿@page "/"
 @using System.Diagnostics
+@inject EsirDriver.FiskalPrevoditeljToEsir _engin
 
 <h1>Hello, world!</h1>
 
+<p>@(prevoditeljSetting?.PathInputFiles??"Nisam setovan")</p>
+
 Welcome to your new app.
 @code {
-
+    private EsirDriver.Modeli.PrevoditeljSettingModel prevoditeljSetting { get; set; }
     protected override void OnInitialized()
     {
+        prevoditeljSetting = _engin.GetPrevoditeljConfig();
         Trace.WriteLine("Kakav si mi");
     }
 
