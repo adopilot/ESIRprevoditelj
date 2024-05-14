@@ -1,0 +1,42 @@
+﻿@page "/settings"
+@using System.Diagnostics
+@inject NavigationManager Navigation
+@inject EsirDriver.FiskalPrevoditeljToEsir _engin
+<FluentStack Orientation="Orientation.Vertical" Width="100%" HorizontalAlignment="HorizontalAlignment.Center">
+<FluentBodyContent >
+        <h3>Postavke kase</h3>
+        <FluentCheckbox @bind-Value="@enabled" Label="U Upotrebi" />
+        <FluentTextField @bind-Value=PathInputFiles Label="Prema folderu"></FluentTextField>
+        <FluentTextField @bind-Value=PathOutputFiles Label="Iz foldera"></FluentTextField>
+</FluentBodyContent>
+    <FluentDivider Style="width: 100%;" Role="DividerRole.Presentation"></FluentDivider>
+    <FluentBodyContent>
+        <h3>Postavke fiskalnog printera</h3>
+        <FluentCheckbox @bind-Value="@enabled" Label="U Upotrebi" />
+        <FluentTextField @bind-Value=PathInputFiles Label="Prema folderu"></FluentTextField>
+        <FluentTextField @bind-Value=PathOutputFiles Label="Iz foldera"></FluentTextField>
+    </FluentBodyContent>
+</FluentStack>
+
+
+@code {
+    private int currentCount = 0;
+    bool enabled = true;
+    string? PathInputFiles;
+    string? PathOutputFiles;
+
+
+
+    private void IncrementCount()
+    {
+        currentCount++;
+        Console.WriteLine("consola");
+        Trace.WriteLine("trace");
+       
+    }
+/*   private async void IdiNa(){
+        
+      //  await _engin.Konfigurisi(new EsirDriver.Modeli.EsirConfigModel(){ apiKey="adaoda"}, new EsirDriver.Modeli.PrevoditeljSettingModel(){ PathInputFiles= $"c:\\ado\\{DateTime.Now.ToString("hh:mm:ss")}"});
+        
+    } */
+}
