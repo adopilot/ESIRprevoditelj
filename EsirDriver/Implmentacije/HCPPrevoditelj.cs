@@ -256,22 +256,21 @@ namespace EsirDriver.Implmentacije
                             int pay = 0;
                             int.TryParse(payS, out pay);
 
-                            decimal amnS = 
-
-
-                        }
-
-
+                            
 
 
 
                         }
 
-                        bool bold = false;
-                        bool.TryParse(node?.Attributes?["BOLD"]?.Value ?? "false", out bold);
-                        _footerRows.Add(new HcpFooterRowModel { Data = text, Bold = bold });
-                    }
+
+
+
+
+                        }
+
+                        
                 }
+                
 
 
 
