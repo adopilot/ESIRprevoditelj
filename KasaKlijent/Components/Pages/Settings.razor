@@ -12,9 +12,8 @@
     <FluentDivider Style="width: 100%;" Role="DividerRole.Presentation"></FluentDivider>
     <FluentBodyContent>
         <h3>Postavke fiskalnog printera</h3>
-        <FluentCheckbox @bind-Value="@enabled" Label="U Upotrebi" />
-        <FluentTextField @bind-Value=PathInputFiles Label="Prema folderu"></FluentTextField>
-        <FluentTextField @bind-Value=PathOutputFiles Label="Iz foldera"></FluentTextField>
+        <FluentTextField @bind-Value=apiKey Label="ApiKey"></FluentTextField>
+        <FluentTextField @bind-Value=webserverAddress Label="Webserver Address"></FluentTextField>
     </FluentBodyContent>
 </FluentStack>
 
@@ -24,6 +23,8 @@
     bool enabled = true;
     string? PathInputFiles;
     string? PathOutputFiles;
+    string? apiKey;
+    string? webserverAddress;
 
 
 
@@ -32,8 +33,12 @@
         currentCount++;
         Console.WriteLine("consola");
         Trace.WriteLine("trace");
+
+
        
     }
+
+
 /*   private async void IdiNa(){
         
       //  await _engin.Konfigurisi(new EsirDriver.Modeli.EsirConfigModel(){ apiKey="adaoda"}, new EsirDriver.Modeli.PrevoditeljSettingModel(){ PathInputFiles= $"c:\\ado\\{DateTime.Now.ToString("hh:mm:ss")}"});
