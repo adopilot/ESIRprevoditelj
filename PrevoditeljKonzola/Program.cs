@@ -8,6 +8,7 @@ namespace PrevoditeljKonzola
         {
             Console.WriteLine("Upalio sam se!");
 
+
             //var prevo new EsirDriver.Modeli.EsirSettingsModel() { apiKey = "adoa" }
             var esirSettings = new EsirDriver.Modeli.EsirConfigModel();
             var prevoditeljSettings = new EsirDriver.Modeli.PrevoditeljSettingModel() {
@@ -90,6 +91,7 @@ namespace PrevoditeljKonzola
                 Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Log level {e.LogLevel} {(e.IsError ? "Greška je nakva" : "")} poruika: {e.Poruka} ");
             }
         }
+
     }
 }
 

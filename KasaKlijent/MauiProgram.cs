@@ -1,5 +1,6 @@
 ﻿using EsirDriver;
 using Microsoft.Extensions.Logging;
+using Microsoft.FluentUI.AspNetCore.Components;
 
 namespace KasaKlijent
 {
@@ -15,18 +16,21 @@ namespace KasaKlijent
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                 });
 
+
             builder.Services.AddMauiBlazorWebView();
 
             FiskalPrevoditeljToEsir fiskalPrevoditeljToEsir = new FiskalPrevoditeljToEsir(new EsirDriver.Modeli.EsirConfigModel(), new EsirDriver.Modeli.PrevoditeljSettingModel() { PathInputFiles="inicijalizacija" });
 
             builder.Services.AddSingleton<FiskalPrevoditeljToEsir>(fiskalPrevoditeljToEsir);
-            
-                
+
 
 #if DEBUG
-    		builder.Services.AddBlazorWebViewDeveloperTools();
+            builder.Services.AddFluentUIComponents();
+
+            builder.Services.AddBlazorWebViewDeveloperTools();
             
             builder.Logging.AddDebug();
+
 #endif
 
             return builder.Build();

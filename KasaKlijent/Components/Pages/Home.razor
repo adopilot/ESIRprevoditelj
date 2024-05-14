@@ -2,13 +2,29 @@
 @using System.Diagnostics
 @inject EsirDriver.FiskalPrevoditeljToEsir _engin
 
-<h1>Hello, world!</h1>
+
+<h1>Dobro došli!</h1>
+<FluentGrid Spacing="3" OnBreakpointEnter="@OnBreakpointEnterHandler" AdaptiveRendering="true" Justify="JustifyContent.Center" Style="background-color: var(--neutral-layer-3); padding: 4px; ">
+    <FluentGridItem xs="6" sm="3">
+        <div class="card">
+            <FluentButton Appearance="Appearance.Accent">Start</FluentButton>
+        </div>
+    </FluentGridItem>
+    <FluentGridItem xs="6" sm="3" >
+        <div class="card">
+            <FluentButton Appearance="Appearance.Accent">Stop</FluentButton>
+        </div>
+    </FluentGridItem>
+
+</FluentGrid>
+
+
 
 <p>@(prevoditeljSetting?.PathInputFiles??"Nisam setovan")</p>
 
-Welcome to your new app.
 @code {
-    private EsirDriver.Modeli.PrevoditeljSettingModel prevoditeljSetting { get; set; }
+    private EsirDriver.Modeli.PrevoditeljSettingModel? prevoditeljSetting { get; set; }
+    bool value1, value2, value3 = true, value4;
     protected override void OnInitialized()
     {
         prevoditeljSetting = _engin.GetPrevoditeljConfig();
@@ -18,6 +34,13 @@ Welcome to your new app.
     private void Erin(string ado)
     {
         
+    }
+
+
+    void OnBreakpointEnterHandler(GridItemSize size)
+    {
+        Console.WriteLine($"Page Size: {size}");
+   
     }
 
 }
