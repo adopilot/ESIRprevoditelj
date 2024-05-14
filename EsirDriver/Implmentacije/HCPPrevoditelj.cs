@@ -194,7 +194,7 @@ namespace EsirDriver.Implmentacije
                 XmlElement root = doc.DocumentElement;
 
                 List<HcpArtOnRnModel> stavke = new List<HcpArtOnRnModel>();
-                List<HcpPayOnRnModel> payStave = new List<HcpPayOnRnModel>();
+                List<HcpPayOnRnModel> payStavke = new List<HcpPayOnRnModel>();
 
 
                 // Iterate through each DATA element
@@ -242,7 +242,7 @@ namespace EsirDriver.Implmentacije
                             decimal.TryParse(dsValueS, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out ds);
                             hcpArtOnRnModel.DsValue = ds;
 
-                            string discauntS = node?.Attributes?["DISCOUNT"].Value ?? "false";
+                            string discauntS = node?.Attributes?["DISCOUNT"]?.Value ?? "false";
                             bool discaunt = false;
                             bool.TryParse(discauntS, out discaunt);
                             hcpArtOnRnModel.Discount = discaunt;
@@ -251,12 +251,17 @@ namespace EsirDriver.Implmentacije
                         //Ako imamo PAY atribut onda je to py red
                         else if (!string.IsNullOrEmpty(payS))
                         {
-                            HcpPayOnRnModel payRed= new HcpPayOnRnModel();
 
                             int pay = 0;
                             int.TryParse(payS, out pay);
 
-                            
+                            string amnS = (node?.Attributes?["AMN"]?.Value ?? "0").Replace(",", ".");
+                            decimal amn = 0;
+                            decimal.TryParse(amnS, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out amn);
+
+
+                            HcpPayOnRnModel payRed = new HcpPayOnRnModel() { Amn= amn, Pay= pay };
+                            payStavke.Add(payRed);
 
 
 
@@ -266,11 +271,19 @@ namespace EsirDriver.Implmentacije
 
 
 
-                        }
+                    }
 
                         
                 }
                 
+                foreach(var red in stavke)
+                {
+                    Console.WriteLine($"Stavka računa na kolicina {red.Amn.ToString("#.###")} cijena {red.Prc.ToString("#.###")} naziv {red.Dsc}");
+                }
+                foreach (var red in payStavke)
+                {
+                    Console.WriteLine($"Plaćanmje iznos {red.Amn.ToString("#.###")} vrsta {red.Pay}");
+                }
 
 
 
