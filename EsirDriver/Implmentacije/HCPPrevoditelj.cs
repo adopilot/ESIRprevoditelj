@@ -10,6 +10,7 @@ using System.Xml;
 using System.Reflection.PortableExecutable;
 using System.Reflection.Metadata;
 using System.IO;
+using System.Globalization;
 
 namespace EsirDriver.Implmentacije
 {
@@ -176,11 +177,104 @@ namespace EsirDriver.Implmentacije
         private async Task<PorukaFiskalnogPrintera> OdradiRCPDaoteku(string fileFullPath)
         {
             var fileName = Path.GetFileNameWithoutExtension(fileFullPath);
-            string exMsg = string.Empty;
-            int greskaId = 0;
-            string opisGreske = "Sve je ok";
+
             try
             {
+                string xmlContent;
+                using (StreamReader sr = new StreamReader(fileFullPath, encoding))
+                {
+                    xmlContent = await sr.ReadToEndAsync();
+                }
+
+                // Parse the XML content
+                XmlDocument doc = new XmlDocument();
+                doc.LoadXml(xmlContent);
+
+                // Get the root element
+                XmlElement root = doc.DocumentElement;
+
+                List<HcpArtOnRnModel> stavke = new List<HcpArtOnRnModel>();
+                List<HcpPayOnRnModel> payStave = new List<HcpPayOnRnModel>();
+
+
+                // Iterate through each DATA element
+                foreach (XmlNode node in root.ChildNodes)
+                {
+                    if (node.Name == "DATA")
+                    {
+
+                        // Get the TEXT attribute value
+                        string brc = node?.Attributes?["BCR"]?.Value ?? "";
+                        string payS = node?.Attributes?["PAY"]?.Value ?? "";
+
+                        //Ako imamo BRC atribut onda je to arikal red
+                        if (!string.IsNullOrEmpty(brc))
+                        {
+                            HcpArtOnRnModel hcpArtOnRnModel = new HcpArtOnRnModel();
+                            hcpArtOnRnModel.Brc = brc;
+                            int vat = 1;
+                            var vatS = node?.Attributes?["VAT"]?.Value ?? "1";
+                            int.TryParse(vatS, out vat);
+                            hcpArtOnRnModel.Vat = vat;
+
+                            int mes = 0;
+                            var mesS = node?.Attributes?["MES"]?.Value ?? "1";
+                            int.TryParse(mesS, out mes);
+                            hcpArtOnRnModel.Mes = mes;
+
+                            hcpArtOnRnModel.Dsc = node?.Attributes?["DSC"]?.Value ?? "Nepoznat arikal";
+
+                            string prcS = (node?.Attributes?["PRC"]?.Value ?? "0").Replace(",", ".");
+                            decimal prc = 0;
+
+                            decimal.TryParse(prcS, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out prc);
+
+                            hcpArtOnRnModel.Prc = prc;
+
+                            string amnS = (node?.Attributes?["AMN"]?.Value ?? "0").Replace(",", ".");
+                            decimal amn = 0;
+                            decimal.TryParse(amnS, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out amn);
+
+                            hcpArtOnRnModel.Amn = amn;
+
+                            string dsValueS = (node?.Attributes?["DS_VALUE"]?.Value ?? "0").Replace(",", ".");
+                            decimal ds = 0;
+                            decimal.TryParse(dsValueS, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out ds);
+                            hcpArtOnRnModel.DsValue = ds;
+
+                            string discauntS = node?.Attributes?["DISCOUNT"].Value ?? "false";
+                            bool discaunt = false;
+                            bool.TryParse(discauntS, out discaunt);
+                            hcpArtOnRnModel.Discount = discaunt;
+                            stavke.Add(hcpArtOnRnModel);
+                        }
+                        //Ako imamo PAY atribut onda je to py red
+                        else if (!string.IsNullOrEmpty(payS))
+                        {
+                            HcpPayOnRnModel payRed= new HcpPayOnRnModel();
+
+                            int pay = 0;
+                            int.TryParse(payS, out pay);
+
+                            decimal amnS = 
+
+
+                        }
+
+
+
+
+
+                        }
+
+                        bool bold = false;
+                        bool.TryParse(node?.Attributes?["BOLD"]?.Value ?? "false", out bold);
+                        _footerRows.Add(new HcpFooterRowModel { Data = text, Bold = bold });
+                    }
+                }
+
+
+
                 if (_prevoditeljSettingModel.AutomaticallyCloseRecept)
                 {
 
@@ -190,13 +284,13 @@ namespace EsirDriver.Implmentacije
                 {
                     //tempiramo račun ovo nećemo implentirati do daljenjg
                 }
-                File.Copy(fileFullPath, Path.Combine("C:\\HCP\\to_fp\\tring_temp", fileName));
+                File.Copy(fileFullPath, Path.Combine("C:\\HCP\\to_fp\\tring_temp", fileName),true);
                 await OdgovoriIObrisi(fileFullPath, false, "Oštaman rn ");
                 return new PorukaFiskalnogPrintera() { Poruka = $"Oradio sam rcp {fileName} datoku", LogLevel = LogLevel.Debug, MozeNastaviti = true };
             }
             catch (Exception ex)
             {
-                exMsg = ex.Message;
+                
                 await OdgovoriIObrisi(fileFullPath, true, $"1 - \nGreska kod stampanja raruna ex {ex.Message}");
                 return new PorukaFiskalnogPrintera() { Poruka = $"Greška u RCP-u {fileName} datokoom {ex.Message}", LogLevel = LogLevel.Debug, MozeNastaviti = true };
             }
