@@ -3,19 +3,33 @@
 @inject EsirDriver.FiskalPrevoditeljToEsir _engin
 
 
-<h1>Dobro došli!</h1>
+<h1>Dobro došli!</h1
+    <FluentToolbar id="toolbar-fluent-components" Style="display:flex;">
+    <FluentButton xs="6" Appearance="Appearance.Accent" OnClick="@startButtonCliced" Style="width: 200px;">  @if (serviceStarted)
+    {
+        <text>Stop</text>
+    }
+    else
+    {
+        <text>Start</text>
+    }</FluentButton>
+    <FluentSpacer />
+<FluentSelect Items=@stringOptions1
+               OptionText="@(i => i.Text)"
+               OptionValue="@(i => i.Value)"
+               OptionSelected="@(i => i.Selected)"
+               @bind-Value="@logLevel" />
+
+    </FluentToolbar>
+
+
 <FluentGrid Spacing="3" OnBreakpointEnter="@OnBreakpointEnterHandler" AdaptiveRendering="true" Justify="JustifyContent.Center" Style="background-color: var(--neutral-layer-3); padding: 4px; ">
     <FluentGridItem xs="6" sm="3">
         <div class="card">
-            <FluentButton Appearance="Appearance.Accent">Start</FluentButton>
+          
         </div>
     </FluentGridItem>
-    <FluentGridItem xs="6" sm="3" >
-        <div class="card">
-            <FluentButton Appearance="Appearance.Accent">Stop</FluentButton>
-        </div>
-    </FluentGridItem>
-
+   
 </FluentGrid>
 
 
@@ -23,8 +37,20 @@
 <p>@(prevoditeljSetting?.PathInputFiles??"Nisam setovan")</p>
 
 @code {
+   
+
+    static List<Option<string>> stringOptions1 = new()
+    {
+        { new Option<string> { Value = "1", Text = "One", } },
+        { new Option<string> { Value = "2", Text = "Two", } },
+        { new Option<string> { Value = "3", Text = "Three" } },
+        { new Option<string> { Value = "4", Text = "Four" } }, };
+    FluentToolbar? Toolbar;
+    bool serviceStarted = false;
+
     private EsirDriver.Modeli.PrevoditeljSettingModel? prevoditeljSetting { get; set; }
-    bool value1, value2, value3 = true, value4;
+
+    string? logLevel = "Level 1";
     protected override void OnInitialized()
     {
         prevoditeljSetting = _engin.GetPrevoditeljConfig();
@@ -33,7 +59,15 @@
 
     private void Erin(string ado)
     {
-        
+
+    }
+    void startButtonCliced()
+
+    {
+
+      
+        serviceStarted = !serviceStarted;
+
     }
 
 
@@ -41,6 +75,12 @@
     {
         Console.WriteLine($"Page Size: {size}");
    
+    }
+
+    private void HandleOnMenuChanged(MenuChangeEventArgs args)
+    {
+
+
     }
 
 }

@@ -8,35 +8,59 @@
         <FluentCheckbox @bind-Value="@enabled" Label="U Upotrebi" />
         <FluentTextField @bind-Value=PathInputFiles Label="Prema folderu"></FluentTextField>
         <FluentTextField @bind-Value=PathOutputFiles Label="Iz foldera"></FluentTextField>
-</FluentBodyContent>
-    <FluentDivider Style="width: 100%;" Role="DividerRole.Presentation"></FluentDivider>
-    <FluentBodyContent>
+    <FluentDivider Style="width: 100%;" Role="DividerRole.Presentation"></FluentDivider><br />
         <h3>Postavke fiskalnog printera</h3>
-        <FluentTextField @bind-Value=apiKey Label="ApiKey"></FluentTextField>
+        <FluentTextField @bind-Value=ApiKey Label="ApiKey"></FluentTextField>
         <FluentTextField @bind-Value=webserverAddress Label="Webserver Address"></FluentTextField>
+        <br />
+        <FluentButton OnClick="@onClick" Appearance="Appearance.Accent">Save</FluentButton>
     </FluentBodyContent>
 </FluentStack>
 
 
 @code {
-    private int currentCount = 0;
     bool enabled = true;
     string? PathInputFiles;
     string? PathOutputFiles;
-    string? apiKey;
+    string? ApiKey;
     string? webserverAddress;
-
-
-
-    private void IncrementCount()
+    protected override async Task OnInitializedAsync()
     {
-        currentCount++;
-        Console.WriteLine("consola");
-        Trace.WriteLine("trace");
+        string? value = await SecureStorage.Default.GetAsync("enabled"??"false");
+        PathInputFiles =await SecureStorage.Default.GetAsync("enabled");
+        PathOutputFiles = await SecureStorage.Default.GetAsync("PathOutputFiles");
+
+        ApiKey = await SecureStorage.Default.GetAsync("ApiKey");
+        webserverAddress = await SecureStorage.Default.GetAsync("webserverAddress");
 
 
-       
+
     }
+
+
+    async private void onClick()
+    {
+        try
+        {
+            // Saveto  the SecureStorage
+            await SecureStorage.SetAsync("enabled", enabled.ToString());
+            await SecureStorage.SetAsync("PathInputFiles", PathInputFiles!);
+            await SecureStorage.SetAsync("PathOutputFiles", PathOutputFiles!);
+            await SecureStorage.SetAsync("ApiKey", ApiKey!);
+            await SecureStorage.SetAsync("webserverAddress", webserverAddress!);
+        }
+        catch (Exception ex)
+        {
+            // Handle any exceptions
+            Console.WriteLine($"Error saving data: {ex.Message}");
+        }
+    }
+
+
+
+  
+
+
 
 
 /*   private async void IdiNa(){
