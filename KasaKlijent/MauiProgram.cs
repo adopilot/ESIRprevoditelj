@@ -26,13 +26,11 @@ namespace KasaKlijent
 
 #if DEBUG
             builder.Services.AddFluentUIComponents();
-
-            builder.Services.AddBlazorWebViewDeveloperTools();
-            
+            builder.Services.AddBlazorWebViewDeveloperTools();            
             builder.Logging.AddDebug();
 
 #endif
-
+            builder.Services.AddFluentUIComponents();
             return builder.Build();
         }
     }

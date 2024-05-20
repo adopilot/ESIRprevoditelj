@@ -40,12 +40,12 @@
         <GenerateAppInstallerFile>True</GenerateAppInstallerFile>
         <AppxPackageSigningEnabled>False</AppxPackageSigningEnabled>
         <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
-        <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
+        <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
         <AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
         <GenerateTestArtifacts>True</GenerateTestArtifacts>
         <AppInstallerUri>C:\Users\ermin.mesanovic\Desktop\</AppInstallerUri>
         <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
-        <AppxPackageDir>C:\Users\ermin.mesanovic\source\repos\ESIRprevoditelj\</AppxPackageDir>
+        <AppxPackageDir>C:\Users\ermin.mesanovic\source\repos\ESIRprevoditelj</AppxPackageDir>
     </PropertyGroup>
 
     <ItemGroup>
