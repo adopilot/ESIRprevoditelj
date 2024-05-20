@@ -26,7 +26,7 @@
     string? webserverAddress;
     protected override async Task OnInitializedAsync()
     {
-        string? value = await SecureStorage.Default.GetAsync("enabled"??"false");
+        enabled = bool.Parse(await SecureStorage.Default.GetAsync("enabled" )??"false");
         PathInputFiles =await SecureStorage.Default.GetAsync("enabled");
         PathOutputFiles = await SecureStorage.Default.GetAsync("PathOutputFiles");
 
