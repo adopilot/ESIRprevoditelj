@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using EsirDriver.Modeli;
+using System.Text;
 
 namespace PrevoditeljKonzola
 {
@@ -86,7 +87,7 @@ namespace PrevoditeljKonzola
         }
         private static void Servis_MessageReceived(object? sender, EsirDriver.Modeli.PorukaFiskalnogPrintera e)
         {
-            if (e.LogLevel >= Microsoft.Extensions.Logging.LogLevel.Debug)
+            if (e.LogLevel >= LogLevel.Debug)
             {
                 Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Log level {e.LogLevel} {(e.IsError ? "Greška je nakva" : "")} poruika: {e.Poruka} ");
             }

@@ -66,7 +66,7 @@ namespace EsirDriver
                 _stateIsError = true;
 
 
-                PorukaFiskalnogPrintera porukaFiskalnogPrintera = new PorukaFiskalnogPrintera() { IsError = true, LogLevel = Microsoft.Extensions.Logging.LogLevel.Debug, Poruka = ex.Message };
+                PorukaFiskalnogPrintera porukaFiskalnogPrintera = new PorukaFiskalnogPrintera() { IsError = true, LogLevel = LogLevel.Debug, Poruka = ex.Message };
                 OnMessageReceived(porukaFiskalnogPrintera);
             }
         }
@@ -88,8 +88,8 @@ namespace EsirDriver
                         _prevoditeljSettings.Enabled = false;
                         _stateInfoMsg = $"Nismo uspijeli konfigusati ESIR poruka:  {(configMsg?.Poruka ?? "null")}";
                         _stateIsError = true;
-                        OnMessageReceived( configMsg ?? new PorukaFiskalnogPrintera() { MozeNastaviti = false, IsError = true, LogLevel = Microsoft.Extensions.Logging.LogLevel.Critical, Poruka = "Nisam uspijeo konfigursati  esir" });
-                        return configMsg ?? new PorukaFiskalnogPrintera() { MozeNastaviti = false, IsError = true, LogLevel = Microsoft.Extensions.Logging.LogLevel.Critical, Poruka = "Nisam uspijeo konfigursati  esir" };
+                        OnMessageReceived( configMsg ?? new PorukaFiskalnogPrintera() { MozeNastaviti = false, IsError = true, LogLevel = LogLevel.Critical, Poruka = "Nisam uspijeo konfigursati  esir" });
+                        return configMsg ?? new PorukaFiskalnogPrintera() { MozeNastaviti = false, IsError = true, LogLevel = LogLevel.Critical, Poruka = "Nisam uspijeo konfigursati  esir" };
                     }
 
                 switch (prevoditeljSettingModel.KomandePrintera)
@@ -102,7 +102,7 @@ namespace EsirDriver
                         }
                         catch (Exception ex)
                         {
-                           var encodingSex = new PorukaFiskalnogPrintera() { IsError=true, LogLevel= Microsoft.Extensions.Logging.LogLevel.Warning, MozeNastaviti= false, Poruka=$"Postavke za enkoing xml fajlova nisu ispravne greška {ex.Message}" };
+                           var encodingSex = new PorukaFiskalnogPrintera() { IsError=true, LogLevel= LogLevel.Warning, MozeNastaviti= false, Poruka=$"Postavke za enkoing xml fajlova nisu ispravne greška {ex.Message}" };
                             OnMessageReceived(encodingSex);
                             return encodingSex;
                         }
@@ -111,7 +111,7 @@ namespace EsirDriver
                     default:
                         _stateInfoMsg = $"Tip fiskalnog printera {prevoditeljSettingModel.KomandePrintera} još nisu podržane";
                         _stateIsError = true;
-                        var poruka = new PorukaFiskalnogPrintera() { IsError = true, LogLevel = Microsoft.Extensions.Logging.LogLevel.Critical, Poruka = _stateInfoMsg };
+                        var poruka = new PorukaFiskalnogPrintera() { IsError = true, LogLevel = LogLevel.Critical, Poruka = _stateInfoMsg };
                         OnMessageReceived(poruka);
                         return poruka;
                 }
@@ -123,7 +123,7 @@ namespace EsirDriver
                 {
                     Start();
                 }
-                var porukaOk = new PorukaFiskalnogPrintera() { LogLevel = Microsoft.Extensions.Logging.LogLevel.Information, MozeNastaviti = true, IsError = false, Poruka = "Serivs je konfigursan" };
+                var porukaOk = new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Information, MozeNastaviti = true, IsError = false, Poruka = "Serivs je konfigursan" };
                 OnMessageReceived(porukaOk);
                 return porukaOk;
                
@@ -135,7 +135,7 @@ namespace EsirDriver
                 _stateInfoMsg = $"Greška prilikom konfiguracije servisa FiskalPrevoditelj {ex.Message}";
                 _stateIsError = true;
                 var erroMsg = new PorukaFiskalnogPrintera() { 
-                    LogLevel = Microsoft.Extensions.Logging.LogLevel.Error, 
+                    LogLevel = LogLevel.Error, 
                     MozeNastaviti = false, IsError = true, 
                     Poruka = $"Greška prilikom konfiguracije servisa FiskalPrevoditelj {ex.Message}" ,
                 };
@@ -159,7 +159,7 @@ namespace EsirDriver
                 _preplacenNaEventePrevoditelja = true;
             }
             _timer.Period = TimeSpan.FromMilliseconds(_prevoditeljSettings.ReadFolderEvryMiliSec);
-            OnMessageReceived(new PorukaFiskalnogPrintera() { Poruka = "Pokrećem serivs", LogLevel= Microsoft.Extensions.Logging.LogLevel.Trace });
+            OnMessageReceived(new PorukaFiskalnogPrintera() { Poruka = "Pokrećem serivs", LogLevel= LogLevel.Trace });
 
         }
 
@@ -174,7 +174,7 @@ namespace EsirDriver
             _preplacenNaEventePrevoditelja = false;
             
 
-            OnMessageReceived(new PorukaFiskalnogPrintera() { Poruka = "Serivs Ugašen", LogLevel = Microsoft.Extensions.Logging.LogLevel.Information });
+            OnMessageReceived(new PorukaFiskalnogPrintera() { Poruka = "Serivs Ugašen", LogLevel = LogLevel.Information });
         }
 
         protected virtual void OnMessageReceived(PorukaFiskalnogPrintera poruka)

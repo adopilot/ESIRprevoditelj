@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using EsirDriver.Modeli.hcp;
 using System.Xml;
 using System.Reflection.PortableExecutable;
@@ -125,7 +124,7 @@ namespace EsirDriver.Implmentacije
             //deleteCmdOkFile();
 
             //PorukaEvent?.Invoke(this, new PorukaFiskalnogPrintera() { IsError = false, MozeNastaviti = true, LogLevel = LogLevel.Debug, Poruka = "Ovo je resendani event" });            
-            return new PorukaFiskalnogPrintera() { LogLevel = Microsoft.Extensions.Logging.LogLevel.Trace, MozeNastaviti = true, Poruka = "Odradio sam klik sata" };
+            return new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Trace, MozeNastaviti = true, Poruka = "Odradio sam klik sata" };
         }
 
         private async Task<PorukaFiskalnogPrintera> OdradiCmdDatoteku(string fileFullPath)

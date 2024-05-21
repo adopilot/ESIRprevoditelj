@@ -11,7 +11,7 @@ namespace EsirDriver.Modeli.esir
         public int Code { get; set; }
         public string Info { get; set; }
         public string Opis { get; set; }
-        public Microsoft.Extensions.Logging.LogLevel LogLevel { get; set; }
+        public LogLevel LogLevel { get; set; }
     }
 
 }
