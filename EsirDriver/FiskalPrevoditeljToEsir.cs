@@ -159,7 +159,7 @@ namespace EsirDriver
                 _preplacenNaEventePrevoditelja = true;
             }
             _timer.Period = TimeSpan.FromMilliseconds(_prevoditeljSettings.ReadFolderEvryMiliSec);
-            OnMessageReceived(new PorukaFiskalnogPrintera() { Poruka = "Pokrećem serivs", LogLevel= LogLevel.Trace });
+            OnMessageReceived(new PorukaFiskalnogPrintera() { Poruka = "Pokrećem serivs", LogLevel= LogLevel.Information });
 
         }
 

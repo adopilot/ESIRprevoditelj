@@ -1,0 +1,14 @@
+﻿@page "/"
+@inject EsirDriver.FiskalPrevoditeljToEsir _engin
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+
+@code {
+    protected override void OnInitialized()
+    {
+        var prevoditeljSetting = _engin.GetPrevoditeljConfig();
+    }
+
+}

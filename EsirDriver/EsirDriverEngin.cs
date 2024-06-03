@@ -194,7 +194,37 @@ namespace EsirDriver
 
         }
     
-       
+      public async Task<PorukaFiskalnogPrintera>  OstampajRacun(InvoiceRequestModel invoiceRequestModel)
+        {
+
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Post, "/api/invoices/");
+                request.
+                var response = await _httpClient.SendAsync(request);
+
+                if (response.IsSuccessStatusCode)
+                    return new PorukaFiskalnogPrintera() { IsError = false, LogLevel = LogLevel.Information, MozeNastaviti = true, Poruka = "Sistem je aktivan" };
+                else
+                {
+                    var poruka = await response.Content.ReadAsStringAsync();
+                    return new PorukaFiskalnogPrintera() { IsError = true, LogLevel = LogLevel.Error, MozeNastaviti = false, Poruka = $"Sistem nije aktivan: {poruka}" };
+
+                }
+
+
+            }
+            catch (HttpRequestException ex)
+            {
+                return new PorukaFiskalnogPrintera() { Poruka = $"ESIR sistem nije aktivan sa http greškom: {ex.StatusCode} {ex.Message} ", IsError = true, MozeNastaviti = false, LogLevel = LogLevel.Error };
+            }
+            catch (Exception ex)
+            {
+                return new PorukaFiskalnogPrintera() { Poruka = $"ESIR sistem nije aktivan sa sistemom greškom:  {ex.Message} ", IsError = true, MozeNastaviti = false, LogLevel = LogLevel.Error };
+
+            }
+
+        }
 
         
 
