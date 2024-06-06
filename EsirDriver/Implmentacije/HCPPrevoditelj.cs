@@ -10,6 +10,8 @@ using System.Reflection.PortableExecutable;
 using System.Reflection.Metadata;
 using System.IO;
 using System.Globalization;
+using EsirDriver.Modeli.esir;
+using System.Text.RegularExpressions;
 
 namespace EsirDriver.Implmentacije
 {
@@ -19,10 +21,10 @@ namespace EsirDriver.Implmentacije
         private readonly PrevoditeljSettingModel _prevoditeljSettingModel;
         private List<HcpFooterRowModel> _footerRows = new List<HcpFooterRowModel>();
         private List<HcpClientRowModel> _clients = new List<HcpClientRowModel>();
-        private HcpClientRowModel _client;
         private readonly Encoding encoding;
         private string _lastFiscalNumber = "0";
-
+        private string _clientSet = string.Empty;
+        private string _refundSet = string.Empty;
         public event EventHandler<PorukaFiskalnogPrintera> PorukaEvent;
 
 
@@ -144,33 +146,61 @@ namespace EsirDriver.Implmentacije
 
 
             string cmdTxt = string.Empty;
-
+            string num = string.Empty;
+            string value = string.Empty;
 
             foreach (XmlNode node in root.ChildNodes)
             {
                 if (node.Name == "DATA")
                 {
                     cmdTxt = node?.Attributes?["CMD"]?.Value?? "NEPOZNATA KOMANDA";
+                    num = node?.Attributes?["NUM"]?.Value ?? string.Empty;
+                    value = node?.Attributes?["VALUE"]?.Value?? string.Empty;
                 }
             }
             
             switch (cmdTxt)
             {
+                //Za ovo čekamo potvrdu upraljvanja novcem
+                case "CASH_IN":
+                case "CASH_OUT":
+                    var status = await _esir.StatusFiskalnogPrintera();
+                    await OdgovoriIObrisi(fileFullPath, !(status?.MozeNastaviti ?? false), status?.Poruka ?? "Nepoznata greška sa ESIR-om");
+                    break;
                 case "RECEIPT_STATE":
                     await ObradiCmdReceptState(fileFullPath);
                 break;
                 case "SET_CLIENT":
-                    //await OdradiCmdSetClinet(fileFullPath);
-                    await OdgovoriIObrisi(fileFullPath, false, $"Obrađijem CMD datokeuk sa komandom {cmdTxt}");
+                    _clientSet = num;
+                    await OdgovoriIObrisi(fileFullPath, false, $"Postavio sam klijenta za slijedći račun {num}");
+                    break;
+                case "REFUND_ON":
+                    _refundSet = num;
+                    await OdgovoriIObrisi(fileFullPath, false, $"Slijedeći račun je stono po broju {num}");
                     break;
                 default:
-                    await OdgovoriIObrisi(fileFullPath, false, $"Obrađijem CMD datokeuk sa komandom {cmdTxt}");
+                    await OdgovoriIObrisi(fileFullPath, false, $"Komanda {cmdTxt} nije implemntirana");
                 break;
             }
 
 
 
-            return new PorukaFiskalnogPrintera() { IsError = false, LogLevel = LogLevel.Debug, MozeNastaviti = true, Poruka = $"Odrali smo cmd datkeu {cmdTxt}" };
+            return new PorukaFiskalnogPrintera() { IsError = false, LogLevel = LogLevel.Debug, MozeNastaviti = true, Poruka = $"Odrali smo cmd datkeu {cmdTxt} {num}" };
+        }
+        private string bagajnikIzFootera(string input)
+        {
+
+            string pattern = @"Blag: (.+)";
+            Match match = Regex.Match(input, pattern);
+            if (match.Success)
+            {
+                string extractedName = match.Groups[1].Value;
+                return extractedName;
+            }
+            else
+            {
+                return null;
+            }
         }
 
         private async Task<PorukaFiskalnogPrintera> OdradiRCPDaoteku(string fileFullPath)
@@ -194,6 +224,16 @@ namespace EsirDriver.Implmentacije
 
                 List<HcpArtOnRnModel> stavke = new List<HcpArtOnRnModel>();
                 List<HcpPayOnRnModel> payStavke = new List<HcpPayOnRnModel>();
+
+                InvoiceModel invoice = new InvoiceModel();
+                InvoiceRequest invoiceRequest = new InvoiceRequest();
+
+
+
+
+
+
+                NumberStyles numberStyles = NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite ;
 
 
                 // Iterate through each DATA element
@@ -226,19 +266,19 @@ namespace EsirDriver.Implmentacije
                             string prcS = (node?.Attributes?["PRC"]?.Value ?? "0").Replace(",", ".");
                             decimal prc = 0;
 
-                            decimal.TryParse(prcS, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out prc);
+                            decimal.TryParse(prcS, numberStyles, CultureInfo.InvariantCulture, out prc);
 
                             hcpArtOnRnModel.Prc = prc;
 
                             string amnS = (node?.Attributes?["AMN"]?.Value ?? "0").Replace(",", ".");
                             decimal amn = 0;
-                            decimal.TryParse(amnS, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out amn);
+                            decimal.TryParse(amnS, numberStyles,  CultureInfo.InvariantCulture, out amn);
 
                             hcpArtOnRnModel.Amn = amn;
 
                             string dsValueS = (node?.Attributes?["DS_VALUE"]?.Value ?? "0").Replace(",", ".");
                             decimal ds = 0;
-                            decimal.TryParse(dsValueS, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out ds);
+                            decimal.TryParse(dsValueS, numberStyles, CultureInfo.InvariantCulture, out ds);
                             hcpArtOnRnModel.DsValue = ds;
 
                             string discauntS = node?.Attributes?["DISCOUNT"]?.Value ?? "false";
@@ -274,28 +314,90 @@ namespace EsirDriver.Implmentacije
 
                         
                 }
-                
-                foreach(var red in stavke)
+
+
+
+                foreach (var red in _footerRows)
                 {
-                    Console.WriteLine($"Stavka računa na kolicina {red.Amn.ToString("#.###")} cijena {red.Prc.ToString("#.###")} naziv {red.Dsc}");
+                    if ((red?.Data??"").StartsWith("Blag:"))
+                    {
+                        var blagajnik = bagajnikIzFootera(red?.Data??"");
+                        if (!string.IsNullOrEmpty(blagajnik))
+                            invoiceRequest.cashier = blagajnik;
+                    }
+                    else
+                    {
+                        invoice.receiptFooterTextLines.Add(red?.Data ?? "");
+                    }
+                }
+
+                foreach (var red in stavke)
+                {
+                    //Ovo može a i ne mora kod nas nema smisla jer je ovo id kojeg niko neće vidjeti:
+                    //gtin = (red?.Brc??"0").PadLeft(13,'0'),
+
+                    invoiceRequest.items.Add(new ItemModel() { discount = 0, discountAmount = 0,  labels = new List<string>() { _prevoditeljSettingModel.PodrazumjevanaPoreskaStopa }, name=red.Dsc, quantity=red.Amn, unitPrice=red.Prc , totalAmount= red.Prc*red.Amn } );
                 }
                 foreach (var red in payStavke)
                 {
-                    Console.WriteLine($"Plaćanmje iznos {red.Amn.ToString("#.###")} vrsta {red.Pay}");
+                    //TODO: Maprianje hcp vrsta plaćanja sa njiv
+
+                    PaymentTypes payTyp = PaymentTypes.Cash;
+
+                    try
+                    {
+                        payTyp = (PaymentTypes)red.Pay;
+                    }
+                    catch (Exception ex) {
+                        PorukaEvent.Invoke(this, new PorukaFiskalnogPrintera() { IsError = false, LogLevel = LogLevel.Warning, MozeNastaviti = true, Poruka = $"Pay type {red.Pay} se nije uspijeo castati u PaymetType esira {ex.Message}" }); 
+                    }
+
+
+                    invoiceRequest.payment.Add(new PaymentModel() { amount=red.Amn, paymentType= payTyp });
                 }
 
 
 
+                if (!string.IsNullOrEmpty(_refundSet))
+                {
+                    var uid = _esir.GetEsirUid();
+                    invoiceRequest.transactionType = TranscationType.Refund;
+                    invoiceRequest.referentDocumentDT = DateTime.Today;
+                    invoiceRequest.referentDocumentNumber = $"{(string)_refundSet.Clone()}";
+                    _refundSet = string.Empty;
+                }
+
+                if (!string.IsNullOrEmpty(_clientSet))
+                {
+                    invoiceRequest.buyerId = (((string)_clientSet.Clone())??"0").PadLeft(13,'0');
+                    var client = _clients.Where(x => x.Ibk == _clientSet).FirstOrDefault();
+                    if (client != null) {
+                        invoice.receiptFooterTextLines.Add($"Kupac: {client.Name}");
+                        invoice.receiptFooterTextLines.Add($"Kupac JIB: {client.Ibk}");
+                        invoice.receiptFooterTextLines.Add($"Kupac adresa: {client.Address}");
+                    }
+
+                    _clientSet = string.Empty;
+                }
+
+                invoice.invoiceRequest = invoiceRequest;
+
+                var ado = await _esir.OstampajRacun(invoice);
+
+                
+
+                /* logika zatvaranja računa ako budemo radili za nekoga 3ćeg
                 if (_prevoditeljSettingModel.AutomaticallyCloseRecept)
                 {
-
+                 
                     //Sada štampamo račun 
                 }
                 else
                 {
                     //tempiramo račun ovo nećemo implentirati do daljenjg
                 }
-                File.Copy(fileFullPath, Path.Combine("C:\\HCP\\to_fp\\tring_temp", fileName),true);
+                */
+                //File.Copy(fileFullPath, Path.Combine("C:\\HCP\\to_fp\\tring_temp", fileName),true);
                 await OdgovoriIObrisi(fileFullPath, false, "Oštaman rn ");
                 return new PorukaFiskalnogPrintera() { Poruka = $"Oradio sam rcp {fileName} datoku", LogLevel = LogLevel.Debug, MozeNastaviti = true };
             }
@@ -316,7 +418,7 @@ namespace EsirDriver.Implmentacije
         {
             File.Delete(Path.Combine(_prevoditeljSettingModel.PathInputFiles, "cmd.ok"));
         }
-
+     
         private async Task<PorukaFiskalnogPrintera> OdradiClientsDatoteku(string fileFullPath)
         {
             try
@@ -342,10 +444,10 @@ namespace EsirDriver.Implmentacije
                     if (node.Name == "DATA")
                     {
                         // Get the TEXT attribute value
-                        string ibk = node?.Attributes?["IBK"]?.Value?? "0000000000000";
-                        string name = node?.Attributes?["NAME"]?.Value??"Kupac";
-                        string address = node?.Attributes?["ADDRESS"]?.Value??"Adrsa";
-                        string town = node?.Attributes?["TOWN"]?.Value ?? "Grad";
+                        string ibk = node?.Attributes?["IBK"]?.Value?? "";
+                        string name = node?.Attributes?["NAME"]?.Value??"";
+                        string address = node?.Attributes?["ADDRESS"]?.Value??"";
+                        string town = node?.Attributes?["TOWN"]?.Value ?? "";
                         _clients.Add(new HcpClientRowModel() { Address=address, Ibk=ibk, Name=name, Town=town });
                     }
                 }
@@ -433,7 +535,9 @@ namespace EsirDriver.Implmentacije
 
 
                 string nefiskalniTekst = string.Empty;
-                
+
+                EsirDirektnaStampaModel esirDirektnaStampaModel = new EsirDirektnaStampaModel();
+
                 foreach (XmlNode node in root.ChildNodes)
                 {
                     if (node.Name == "DATA")
@@ -442,7 +546,7 @@ namespace EsirDriver.Implmentacije
                         string text = node?.Attributes?["TXT"]?.Value ??"";
 
                         if (!string.IsNullOrEmpty(text))
-                            nefiskalniTekst += $"{text}{Environment.NewLine}";
+                            esirDirektnaStampaModel.textLines.Add(text);
 
                     }
                 }
@@ -450,13 +554,16 @@ namespace EsirDriver.Implmentacije
                 //TODO: Send nefisalni tekst prema esiru;
                 PorukaEvent.Invoke(this, new PorukaFiskalnogPrintera()
                 {
-                    LogLevel = LogLevel.Trace,
+                    LogLevel = LogLevel.Debug,
                     Poruka= "Nefiskalni tekst je: \n" + nefiskalniTekst,
                      IsError=false,
                      MozeNastaviti = true
                 });
-                await OdgovoriIObrisi(fileFullPath, false, "");
-                return new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Debug, MozeNastaviti = true, Poruka = "Obradili smo nefiskalni tekst datoku" };
+
+                var reso = await _esir.DirektnaSampa(esirDirektnaStampaModel);
+
+                await OdgovoriIObrisi(fileFullPath, reso?.IsError??true, reso?.Poruka??"103-Nepoznata porkua kod štampe");
+                return reso;
 
             }
             catch (Exception ex)
@@ -481,6 +588,7 @@ namespace EsirDriver.Implmentacije
             }
             File.Delete(fileFullPath);
             deleteCmdOkFile();
+            PorukaEvent.Invoke(this, new PorukaFiskalnogPrintera() { IsError = greskaLiJe, LogLevel = greskaLiJe ? LogLevel.Error : LogLevel.Debug, MozeNastaviti = true, Poruka = content??"Poruka" });
 
 
         }

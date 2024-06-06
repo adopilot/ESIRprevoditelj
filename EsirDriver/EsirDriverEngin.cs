@@ -1,4 +1,5 @@
-﻿using EsirDriver.Modeli;
+﻿using EsirDriver.JsonConverteri;
+using EsirDriver.Modeli;
 using EsirDriver.Modeli.esir;
 using System;
 using System.Collections.Generic;
@@ -6,7 +7,10 @@ using System.Linq;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using System.Xml.Linq;
+
 
 namespace EsirDriver
 {
@@ -14,41 +18,73 @@ namespace EsirDriver
     {
         private EsirConfigModel _esirConfig;
         HttpClient _httpClient;
-        public EsirDriverEngin(EsirConfigModel esirConfigModel)
+
+        public event EventHandler<PorukaFiskalnogPrintera> PorukaEvent;
+
+        private readonly JsonSerializerOptions _jsonSerializerOptions;
+        private Modeli.esir.EsirStatusModel esirCurrent { get; set; }
+
+
+
+        public EsirDriverEngin()
         {
-            _esirConfig = esirConfigModel;
-            _httpClient = new HttpClient() { BaseAddress = new Uri(esirConfigModel?.webserverAddress ?? "http://127.0.0.1:3566/") };
+            _jsonSerializerOptions = new JsonSerializerOptions
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                Converters =
+            {
+                new JsonStringEnumConverter(),
+                new DecimalRoundingConverter(),
+                new DecimalNullRoundingConverter()
+            }
+            };
+
+
+        }
+
+        public string GetEsirUid()
+        {
+            return esirCurrent?.uid??"NEPOZNAT";
         }
 
         public async Task<PorukaFiskalnogPrintera> Konfigurisi(EsirConfigModel esirConfigModel)
         {
-            this._esirConfig = esirConfigModel;
-
-            _httpClient = new HttpClient() { BaseAddress = new Uri(esirConfigModel?.webserverAddress ?? "http://127.0.0.1:3566/") };
-            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_esirConfig.apiKey}");
-
-
-            return new PorukaFiskalnogPrintera() { LogLevel= LogLevel.Information, MozeNastaviti= true, Poruka="Sve je ok" };
-
-            var dostupan = await ProvjeriDostupan();
-
-            //if (dostupan.IsError)
-               // return dostupan;
-
-            var statusFp1 = await StatusFiskalnogPrintera();
-
-            if (statusFp1.Poruka== "ESIR nema isrpavan sigurnosti elemnt")
+            try
             {
+
+           
+
+                this._esirConfig = esirConfigModel;
+
+                Uri uri; ;
+                if (!Uri.TryCreate(esirConfigModel?.webserverAddress, UriKind.Absolute, out uri))
+                    return new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = false, LogLevel = LogLevel.Error, Poruka = $"Adresa fiskalnog printera nije isrpavna" };
+
+
+                _httpClient = new HttpClient() { BaseAddress = uri , Timeout= TimeSpan.FromSeconds(_esirConfig.TimeoutInSec)};
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_esirConfig.apiKey}");
+
+                PorukaEvent.Invoke(this, new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Information, MozeNastaviti = true, Poruka = $"Udesio sam http clienta na {uri}" });
+
+
+                //deom mode
+                //return new PorukaFiskalnogPrintera() { IsError = false, MozeNastaviti = true, LogLevel = LogLevel.Information, Poruka = $"Nazor da vidimo grešku" };
+
+
                 
+                    
+                var statusFp1 = await StatusFiskalnogPrintera();
+                if (!statusFp1.MozeNastaviti)
+                {
+                    _httpClient = null;
+                }
+                return statusFp1;
             }
-            else if (statusFp1.Poruka== "ESIR nema ispravan pin")
+            catch (Exception ex)
             {
-
+                _httpClient = null;
+                return new PorukaFiskalnogPrintera() { IsError=true, LogLevel = LogLevel.Error, MozeNastaviti=false, Poruka=$"Greška u konfigurisanju fp ex:{ex.Message}" };
             }
-         
-
-            return statusFp1;
-
 
 
         }
@@ -74,7 +110,7 @@ namespace EsirDriver
                 case 1500:
                     return new EsirStatusCodeModel() { Code = code, Info = "Potreban je PIN kod", Opis = "Pokazuje da POS mora pružiti PIN kod", LogLevel = LogLevel.Warning };
                 case 1999:
-                    return new EsirStatusCodeModel() { Code = code, Info = "Nedefinisano upozorenje", Opis = "Nešto nije u redu, ali specifično upozorenje nije definisano za tu situaciju. Proizvođač može koristiti specifične kodove proizvođača da opiše upozorenje u više detalja.", LogLevel = LogLevel.Warning };
+                    return new EsirStatusCodeModel() { Code = code, Info = "Nedefinisano upozorenje", Opis = "Nešto nije u redu, ali specifično upozorenje nije definisano za tu situaciju. Proizvođač može koristiti specifične kodove proizvođača da opiše upozorenje u više detalja.", LogLevel = LogLevel.Error };
                 case 2100:
                     return new EsirStatusCodeModel() { Code = code, Info = "PIN nije OK", Opis = "PIN kod poslan od strane POS-a nije validan", LogLevel = LogLevel.Error };
                 case 2110:
@@ -115,56 +151,194 @@ namespace EsirDriver
         }
 
 
+        private PorukaFiskalnogPrintera ImamoLiConfig()
+        {
+            if (_httpClient == null || _esirConfig == null)
+                return new PorukaFiskalnogPrintera() { IsError = true, LogLevel = LogLevel.Error, MozeNastaviti = false, Poruka = "Fiskalni printer nije konfigursan" };
+
+            else return new PorukaFiskalnogPrintera() { MozeNastaviti = true };
+        }
+        public async Task<PorukaFiskalnogPrintera> DirektnaSampa(EsirDirektnaStampaModel model)
+        {
+            if (model == null)
+                return new PorukaFiskalnogPrintera() { IsError = false, MozeNastaviti = true, LogLevel = LogLevel.Debug, Poruka = "Nemam šta da štamapm na esiru putem direktne štampe" };
+            if (!ImamoLiConfig().MozeNastaviti)
+            {
+                return ImamoLiConfig();
+            }
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Post, "/api/device/print/");
 
 
 
+                var json = JsonSerializer.Serialize(model, _jsonSerializerOptions);
+
+                var content = new StringContent(json, null, "application/json");
+                request.Content = content;
+
+                var response = await _httpClient.SendAsync(request);
+
+                string res = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return new PorukaFiskalnogPrintera() { IsError = false, MozeNastaviti = true, LogLevel = LogLevel.Debug, Poruka = "Ostamapli smo ne fiskalni tekst" };
+                }
+                else
+                {
+                    try
+                    {
+                        EsirErrorResopnse esirErrorResopnse = JsonSerializer.Deserialize<EsirErrorResopnse>(res);
+                        return new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = true, LogLevel = LogLevel.Warning, Poruka = $"Nismo oštampali nefiskalni tekst sa greškom {esirErrorResopnse.message}" };
+                    }
+                    catch
+                    {
+
+                    }
+                    
+                        return new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = true, LogLevel = LogLevel.Warning, Poruka = $"Nismo oštampali nefiskalni tekst sa greškom {res}" };
+                }
+        }
+            catch (HttpRequestException ex)
+            {
+                return new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = false, LogLevel = LogLevel.Error, Poruka = $"HTTP Greška kod štampanja nefiskalnog teksta {ex.Message}" };
+            }
+            catch (Exception ex)
+            {
+                return new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = false, LogLevel = LogLevel.Error, Poruka = $" Greška kod štampanja nefiskalnog teksta {ex.Message}" };
+
+
+            }
+
+
+        }
+
+        private async Task<PorukaFiskalnogPrintera> unesitePin(int pin)
+        {
+            try
+            {
+                if (!ImamoLiConfig().MozeNastaviti)
+                {
+                    return ImamoLiConfig();
+                }
+                var request = new HttpRequestMessage(HttpMethod.Post, "/api/pin");
+                request.Content = new StringContent(pin.ToString()); 
+                var response = await _httpClient.SendAsync(request);
+                var poruka = await response.Content.ReadAsStringAsync();
+
+                switch (poruka)
+                {
+                    case "0100":
+                    case "\"0100\"":
+                        return new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Information, MozeNastaviti = true, IsError = false, Poruka = "PIN je ispravno unet" };
+                    case "1300":
+                    case "\"1300\"":
+
+                        return new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Error, MozeNastaviti = false, IsError = true, Poruka = "Bezbednosni element nije prisutan" };
+                    case "2800":
+                    case "\"2800\"":
+                        return new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Error, MozeNastaviti = false, IsError = true, Poruka = "Pogrešan format PIN-a (očekivano 4 cifre)" };
+                    case "2806":
+                    case "\"2806\"":
+                        return new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Error, MozeNastaviti = false, IsError = true, Poruka = "Pogrešan format PIN-a (očekivano 4 cifre)" };
+                    default:
+                        int code = 0;
+                        var codeStr = int.TryParse((poruka ?? "0").Replace("\"", ""),out code);
+                        var info = GetStatusFromCode(code);
+                        return new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Error, MozeNastaviti = false, IsError = true, Poruka = $"Greška pirlikom unešanje pina  {info.Info}" };
+                }
+
+            }
+            catch (Exception ex)
+            {    
+                    return new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Error, MozeNastaviti = false, IsError = true, Poruka = $"Nismo unjeli pin sa greškom {ex.Message}" };
+            }
+
+        }
         public async Task<PorukaFiskalnogPrintera> StatusFiskalnogPrintera()
         {
             try
             {
+                    if (!ImamoLiConfig().MozeNastaviti)
+                    {
+                        return ImamoLiConfig();
+                    }
+
+                var dostupan = await provjeriDostupan();
+                PorukaEvent.Invoke(this, dostupan);
+
+                if (dostupan.IsError)
+                {
+                    _httpClient = null;
+                    return dostupan;
+                }
+
+
+
                 var request = new HttpRequestMessage(HttpMethod.Get, "/api/status");
-                var response = await _httpClient.SendAsync(request);
+                HttpResponseMessage response = await _httpClient.SendAsync(request);
                 string res = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
-                   Modeli.esir.EsirStatusModel esirCurrent = JsonSerializer.Deserialize<EsirStatusModel>(res);
+                   esirCurrent = null;
+                   esirCurrent = JsonSerializer.Deserialize<EsirStatusModel>(res);
 
                     if (esirCurrent == null)
                         return new PorukaFiskalnogPrintera() { IsError = true, LogLevel = LogLevel.Error, MozeNastaviti = false, Poruka = "ESIR status ima vrijednost null ne možemo nastaviti" };
 
-                    List<EsirStatusCodeModel> statusiUOdgovoru = new List<EsirStatusCodeModel>();
-                    foreach (var status in  esirCurrent.gsc)
+                    if (esirCurrent?.isPinRequired??false)
                     {
-                        var sts =  GetStatusFromCode(int.Parse(status??"0"));
-                        if (sts.LogLevel == LogLevel.Error)
-                            return new PorukaFiskalnogPrintera() { IsError = true, LogLevel = LogLevel.Error, MozeNastaviti = false, Poruka = $"ESIR je u grešci: {sts.Info} - {sts.Opis}" };
-
+                        PorukaEvent.Invoke(this, new PorukaFiskalnogPrintera() { IsError = false, MozeNastaviti = true, LogLevel = LogLevel.Information, Poruka = "ESIR traži unos pina (pokušavamo)" });
+                        var pinRespnse = await unesitePin(_esirConfig.pin);
+                        PorukaEvent.Invoke(this, pinRespnse);
+                        if (pinRespnse.IsError)
+                            return pinRespnse;
+                        else
+                        {
+                            var requestPin = new HttpRequestMessage(HttpMethod.Get, "/api/status");
+                            HttpResponseMessage responsePin = await _httpClient.SendAsync(requestPin);
+                            string resPin = await response.Content.ReadAsStringAsync();
+                            esirCurrent = JsonSerializer.Deserialize<EsirStatusModel>(resPin);
+                        }
                     }
-
-                    if (esirCurrent?.gsc?.Contains("1300") ?? false)
-                        return new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = false, LogLevel = LogLevel.Error, Poruka = "ESIR nema isrpavan sigurnosti elemnt" };
-
-                    if (esirCurrent?.gsc?.Contains("1500") ?? false)
-                        return new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = false, LogLevel = LogLevel.Error, Poruka = "ESIR nema ispravan pin" };
-
-
-
-
-                   return new PorukaFiskalnogPrintera() {  IsError=false, LogLevel= LogLevel.Information, MozeNastaviti = true , Poruka="Fiskalni printer je spreman"};
+                    foreach (var status in  esirCurrent?.gsc??new List<string>() { "2400"})
+                    {
+                        var sts =  GetStatusFromCode(int.Parse(status?? "2400"));
+                        if (sts.LogLevel == LogLevel.Error)
+                        {
+                            var greska = new PorukaFiskalnogPrintera() { IsError = true, LogLevel = LogLevel.Error, MozeNastaviti = false, Poruka = $"ESIR je u grešci: {sts.Info} - {sts.Opis}" };
+                            PorukaEvent.Invoke(this, greska);
+                            return greska;
+                        }
+                        else
+                        {
+                            PorukaEvent.Invoke(this, new PorukaFiskalnogPrintera() { MozeNastaviti = true, LogLevel = LogLevel.Information, Poruka = $"Staus ESIRA {sts.Code} - {sts.Info}" });
+                        }
+                    }
+                    PorukaEvent.Invoke(this, new PorukaFiskalnogPrintera() { IsError = false, MozeNastaviti = true, LogLevel = LogLevel.Information, Poruka = "Fiskalni printer je spreman" });
+               
+                   return new PorukaFiskalnogPrintera() {  IsError=false, LogLevel= LogLevel.Information, MozeNastaviti = true , Poruka=$"Fiskalni printer je spreman {((esirCurrent?.auditRequired??false)?"potrebna je intervvecija":"")} uid:{esirCurrent?.uid}"};
                 }
                 else
                 {                    
-                    return new PorukaFiskalnogPrintera() { IsError = true, LogLevel = LogLevel.Error, MozeNastaviti = false, Poruka = $"Nismo dobili ispravan staus ESIR-a sa http kodom {response.StatusCode} odgovor ESIR-a: {res}" };   
+                    var elseGr = new PorukaFiskalnogPrintera() { IsError = true, LogLevel = LogLevel.Error, MozeNastaviti = false, Poruka = $"Nismo dobili ispravan staus ESIR-a sa http kodom {response.StatusCode} odgovor ESIR-a: {res}" };   
+                    PorukaEvent.Invoke(this, elseGr);
+                    return elseGr;
                 }
                 
             }
             catch (Exception ex)
             {
-                return new PorukaFiskalnogPrintera { IsError = true,  };
+                var exMsg = new PorukaFiskalnogPrintera() { IsError = true, LogLevel = LogLevel.Error, MozeNastaviti = false, Poruka = $"Nismo dobili ispravan staus ESIR-a sa greškom {ex.Message}" };
+
+                PorukaEvent.Invoke(this, exMsg);
+                return exMsg;
+                
             }
         }
 
-        public async Task<PorukaFiskalnogPrintera> ProvjeriDostupan()
+        private async Task<PorukaFiskalnogPrintera> provjeriDostupan()
         {
             try
             {
@@ -172,7 +346,12 @@ namespace EsirDriver
                 var response = await _httpClient.SendAsync(request);
                 
                 if (response.IsSuccessStatusCode)
-                    return new PorukaFiskalnogPrintera() { IsError = false, LogLevel = LogLevel.Information, MozeNastaviti = true, Poruka = "Sistem je aktivan" };
+                    return new PorukaFiskalnogPrintera() { IsError = false, LogLevel = LogLevel.Information, MozeNastaviti = true, Poruka = "Sistem je aktivan (dostupan)" };
+                
+                else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    return new PorukaFiskalnogPrintera() { IsError = true, LogLevel = LogLevel.Error, MozeNastaviti = false, Poruka = $"Niste autorizvoani provjerite api kljuć" };
+                }
                 else
                 {
                     var poruka = await response.Content.ReadAsStringAsync();
@@ -184,7 +363,7 @@ namespace EsirDriver
             }
             catch (HttpRequestException ex)
             {
-                return new PorukaFiskalnogPrintera() { Poruka = $"ESIR sistem nije aktivan sa http greškom: {ex.StatusCode} {ex.Message} ", IsError = true, MozeNastaviti = false, LogLevel = LogLevel.Error };
+               return new PorukaFiskalnogPrintera() { Poruka = $"ESIR sistem nije aktivan sa http greškom: {ex.StatusCode} {ex.Message} ", IsError = true, MozeNastaviti = false, LogLevel = LogLevel.Error };
             }
             catch (Exception ex)
             {
@@ -194,33 +373,73 @@ namespace EsirDriver
 
         }
     
-      public async Task<PorukaFiskalnogPrintera>  OstampajRacun(InvoiceRequestModel invoiceRequestModel)
-        {
 
+        
+
+      public async Task<InvoiceResponseModel>  OstampajRacun(InvoiceModel invoiceRequestModel)
+        {
             try
             {
+                if (ImamoLiConfig().IsError)
+                {
+                    PorukaEvent.Invoke(this,new PorukaFiskalnogPrintera() { IsError=true,MozeNastaviti=false, LogLevel = LogLevel.Error, Poruka=$"Nemožemo štampati faktru kada printer nije knifugrsan"});
+                    throw new Exception("Fiskalni printer nije konfigursan");
+                }
+
+
+                var payment = invoiceRequestModel.invoiceRequest.payment.Sum(x=>x.amount);
+                var total = invoiceRequestModel.invoiceRequest.items.Sum(x=>x.totalAmount);
+
+                if (total > payment)
+                {
+                    invoiceRequestModel.invoiceRequest.payment.Add(new PaymentModel() { paymentType= PaymentTypes.Cash, amount= total- payment });
+                }
+
+                invoiceRequestModel.invoiceRequest.invoiceType = _esirConfig.OperationMode;
+
                 var request = new HttpRequestMessage(HttpMethod.Post, "/api/invoices/");
-                request.
+
+
+                
+                var json = JsonSerializer.Serialize(invoiceRequestModel, _jsonSerializerOptions);
+
+                var content = new StringContent(json, null, "application/json");
+                request.Content = content;
+
                 var response = await _httpClient.SendAsync(request);
 
-                if (response.IsSuccessStatusCode)
-                    return new PorukaFiskalnogPrintera() { IsError = false, LogLevel = LogLevel.Information, MozeNastaviti = true, Poruka = "Sistem je aktivan" };
+                string res = await response.Content.ReadAsStringAsync();
+
+                if (response.StatusCode == System.Net.HttpStatusCode.OK )
+                {
+                    InvoiceResponseModel invoiceResponseModel = JsonSerializer.Deserialize<InvoiceResponseModel>(res);
+                    return invoiceResponseModel;
+                }
                 else
                 {
-                    var poruka = await response.Content.ReadAsStringAsync();
-                    return new PorukaFiskalnogPrintera() { IsError = true, LogLevel = LogLevel.Error, MozeNastaviti = false, Poruka = $"Sistem nije aktivan: {poruka}" };
+                    EsirErrorResopnse esirErrorResopnse = JsonSerializer.Deserialize<EsirErrorResopnse>(res);
 
+                    
+
+                    throw new Exception(esirErrorResopnse?.message??"Greška u odgovru");
+                    
                 }
+                
+                
+
+                
+
+                
 
 
             }
             catch (HttpRequestException ex)
             {
-                return new PorukaFiskalnogPrintera() { Poruka = $"ESIR sistem nije aktivan sa http greškom: {ex.StatusCode} {ex.Message} ", IsError = true, MozeNastaviti = false, LogLevel = LogLevel.Error };
+                throw ex;
             }
             catch (Exception ex)
             {
-                return new PorukaFiskalnogPrintera() { Poruka = $"ESIR sistem nije aktivan sa sistemom greškom:  {ex.Message} ", IsError = true, MozeNastaviti = false, LogLevel = LogLevel.Error };
+                throw ex;
 
             }
 

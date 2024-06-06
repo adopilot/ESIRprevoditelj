@@ -1,4 +1,5 @@
-﻿using System;
+﻿using EsirDriver.Modeli.esir;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,8 +13,14 @@ namespace EsirDriver.Modeli
         public bool authorizeRemoteClients { get; set; }
         public string apiKey { get; set; }
         public string webserverAddress { get; set; }
+        public int pin { get; set; }
 
-        public int pin { get; set; } 
+        public int TimeoutInSec { get; set; } = 10;
+
+        public InvoiceType OperationMode { get; set; } = InvoiceType.Training;
+        
+
+
 
     }
 

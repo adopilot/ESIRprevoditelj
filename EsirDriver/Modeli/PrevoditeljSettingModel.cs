@@ -17,6 +17,9 @@ namespace EsirDriver.Modeli
 
         public string EncodingName { get; set; } = "windows-1250";
         public PrevodimoKomandePrintera KomandePrintera { get; set; }= PrevodimoKomandePrintera.HcpFBiH;
+        public string PodrazumjevanaPoreskaStopa { get; set; } = "F";
+
+        public string IbfmZaStorno { get; set; }
 
     }
 

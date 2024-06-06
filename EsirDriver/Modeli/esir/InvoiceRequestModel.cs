@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace EsirDriver.Modeli.esir
 {
-    public enum InviceType
+    public enum InvoiceType
     {
         Normal, Proforma, Copy, Training, Advance
     }
@@ -29,22 +29,43 @@ namespace EsirDriver.Modeli.esir
     {
         public string name { get; set; }
         public string gtin { get; set; }
-        public List<string> labels { get; set; }
+        public List<string> labels { get; set; } = new List<string>();
         public decimal unitPrice { get; set; }
-        public decimal quantity{ get; set; }
-        public decimal totalPrice { get; set; }
+        public decimal quantity { get; set; }
+        public decimal totalAmount { get; set; }
         public decimal discount { get; set; }
         public decimal discountAmount { get; set; }
 
     }
 
-    public class InvoiceRequestModel
+
+
+    public class InvoiceModel
     {
-        
-        public InviceType invoiceType { get; set; }
-        public TranscationType transactionType { get; set; }
-        public List<PaymentModel> payment {  get; set; }
-        public List<ItemModel> items { get; set; }
+        /// <summary>
+        /// Base64 kodirana slika koja se štampa na početku računa
+        /// </summary>
+        public string receiptHeaderImage { get; set; }
+        /// <summary>
+        /// Base64 kodirana slika koja se štampa na kraju računa
+        /// </summary>
+        public string receiptFooterImage { get; set; }
+        public List<string> receiptHeaderTextLines { get; set; } = new List<string>();
+        public List<string> receiptFooterTextLines { get; set; } = new List<string>();
+
+        public InvoiceRequest invoiceRequest { get; set; }
+
+    }
+
+
+
+    public class InvoiceRequest
+    {
+
+        public InvoiceType invoiceType { get; set; } = InvoiceType.Normal;
+        public TranscationType transactionType { get; set; }= TranscationType.Sale;
+        public List<PaymentModel> payment {  get; set; } = new List<PaymentModel>();
+        public List<ItemModel> items { get; set; } = new List<ItemModel>();
         public string cashier { get; set; }
         /// <summary>
         /// identifikator kupca
@@ -62,21 +83,12 @@ namespace EsirDriver.Modeli.esir
         /// vreme kada je izdat referentni dokument (vreme kada je fiskalizovan račun na koji se referencira ovaj račun)
         /// </summary>
         public DateTime? referentDocumentDT { get; set; }
-        
-        public bool print { get; set; }
+
+        public bool print { get; set; } = true;
         public string email { get; set; }
         public bool renderReceiptImage { get; set; }
 
-        /// <summary>
-        /// Base64 kodirana slika koja se štampa na početku računa
-        /// </summary>
-        public string receiptHeaderImage { get; set; }
-        /// <summary>
-        /// Base64 kodirana slika koja se štampa na kraju računa
-        /// </summary>
-        public string receiptFooterImage { get; set; }
-        public List<string> receiptHeaderTextLines { get; set; }
-        public List<string> receiptFooterTextLines { get; set; }
+        public DateTime? dateAndTimeOfIssue { get; set; }
         /// <summary>
         /// iznos avansne uplate, kod automatskog izdavanja konačnog računa.
         /// </summary>

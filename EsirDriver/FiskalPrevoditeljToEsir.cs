@@ -34,12 +34,21 @@ namespace EsirDriver
         
         public FiskalPrevoditeljToEsir(EsirConfigModel esirConfigModel,PrevoditeljSettingModel prevoditeljSettingModel) 
         {
+            _esir = new EsirDriverEngin();
+            _esir.PorukaEvent += _esir_PorukaEvent;
+
             _ = Konfigurisi(esirConfigModel, prevoditeljSettingModel);
             _ = RunPeriodicTaskAsync();
         }
 
-        
+        private void _esir_PorukaEvent(object? sender, PorukaFiskalnogPrintera e)
+        {
+            if (e != null)
+            {
+                OnMessageReceived(e);
+            }
 
+        }
 
         private async Task RunPeriodicTaskAsync()
         {
@@ -75,11 +84,12 @@ namespace EsirDriver
         {
             try
             {
+                _esirConfig = esirConfigModel;
                 var tempDoesItNeedToWork = prevoditeljSettingModel.Enabled;
                 Stop();
                 _timer.Period = Timeout.InfiniteTimeSpan;
                 
-                _esir = new EsirDriverEngin(esirConfigModel);
+                
                 _prevoditeljSettings = prevoditeljSettingModel;
 
                 var configMsg = await _esir.Konfigurisi(this._esirConfig);
@@ -152,14 +162,24 @@ namespace EsirDriver
 
         public void Start()
         {
+            if (_fiskalniPrevoditelj == null)
+            {
+                OnMessageReceived(new PorukaFiskalnogPrintera() { Poruka = "Servis prevođenja nije konfigursan i nemže biti pokrenut", IsError=true, MozeNastaviti=false, LogLevel = LogLevel.Error });
+                return;
+            }
+
             _prevoditeljSettings.Enabled = true;
             if (!_preplacenNaEventePrevoditelja)
             {
                 _fiskalniPrevoditelj.PorukaEvent += _fiskalniPrevoditelj_PorukaEvent;
                 _preplacenNaEventePrevoditelja = true;
             }
+
+            
+
+
             _timer.Period = TimeSpan.FromMilliseconds(_prevoditeljSettings.ReadFolderEvryMiliSec);
-            OnMessageReceived(new PorukaFiskalnogPrintera() { Poruka = "Pokrećem serivs", LogLevel= LogLevel.Information });
+            OnMessageReceived(new PorukaFiskalnogPrintera() { Poruka = "Pokrećem serivs", LogLevel= LogLevel.Information, MozeNastaviti=true, IsError=false });
 
         }
 
@@ -169,12 +189,12 @@ namespace EsirDriver
             _timer.Period = Timeout.InfiniteTimeSpan;
 
             if (_fiskalniPrevoditelj !=null && _fiskalniPrevoditelj_PorukaEvent != null)
+            {
+                OnMessageReceived(new PorukaFiskalnogPrintera() { Poruka = "Serivs Ugašen", LogLevel = LogLevel.Information });
                 _fiskalniPrevoditelj.PorukaEvent -= _fiskalniPrevoditelj_PorukaEvent;
-            
+            }
             _preplacenNaEventePrevoditelja = false;
             
-
-            OnMessageReceived(new PorukaFiskalnogPrintera() { Poruka = "Serivs Ugašen", LogLevel = LogLevel.Information });
         }
 
         protected virtual void OnMessageReceived(PorukaFiskalnogPrintera poruka)
