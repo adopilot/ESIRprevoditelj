@@ -30,7 +30,7 @@ namespace EsirDriver
 
 
 
-        private EsirDriverEngin _esir;
+        public EsirDriverEngin _esir;
         
         public FiskalPrevoditeljToEsir(EsirConfigModel esirConfigModel,PrevoditeljSettingModel prevoditeljSettingModel) 
         {
@@ -108,7 +108,7 @@ namespace EsirDriver
                          Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
                         try
                         {
-                            var encoding = Encoding.GetEncoding(prevoditeljSettingModel?.EncodingName ?? "Nije Setovano");
+                            var encoding = Encoding.GetEncoding(prevoditeljSettingModel?.EncodingName ?? "windows-1250");
                         }
                         catch (Exception ex)
                         {

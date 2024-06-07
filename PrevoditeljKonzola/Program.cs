@@ -12,7 +12,14 @@ namespace PrevoditeljKonzola
 
 
             //var prevo new EsirDriver.Modeli.EsirSettingsModel() { apiKey = "adoa" }
-            var esirSettings = new EsirDriver.Modeli.EsirConfigModel() { apiKey = "5ead197a9fdf6600c82aff1a803a1625", pin = 2011, webserverAddress = "http://172.16.0.9:3566", authorizeLocalClients = true, authorizeRemoteClients = true, OperationMode = EsirDriver.Modeli.esir.InvoiceType.Normal, TimeoutInSec = 20 };
+            var esirSettings = new EsirDriver.Modeli.EsirConfigModel() 
+            {
+                apiKey = "5ead197a9fdf6600c82aff1a803a1625", 
+                pin = 2011, 
+                webserverAddress = "http://172.16.0.9:3566", 
+                authorizeLocalClients = true, authorizeRemoteClients = true, 
+                OperationMode = EsirDriver.Modeli.esir.InvoiceType.Normal, 
+                TimeoutInSec = 20 };
             var prevoditeljSettings = new EsirDriver.Modeli.PrevoditeljSettingModel() {
                 AutomaticallyCloseRecept = true,
                 KomandePrintera = EsirDriver.Modeli.PrevodimoKomandePrintera.HcpFBiH,
@@ -20,7 +27,8 @@ namespace PrevoditeljKonzola
                 Enabled = true, 
                 PathInputFiles = "C:\\HCP\\TO_FP",
                 PathOutputFiles = "C:\\HCP\\FROM_FP",
-                EncodingName = "windows-1250"
+                EncodingName = "windows-1250",
+                 
             };
             EsirDriver.FiskalPrevoditeljToEsir servis = new EsirDriver.FiskalPrevoditeljToEsir(esirSettings,prevoditeljSettings);
 
@@ -33,6 +41,7 @@ namespace PrevoditeljKonzola
                 $"\nZa konfiguraciju servisa prisnite 3" +
                 $"\nDebug kreiraj cmd.OK HCP datokeu sitni 4" +
                 $"\nZa unos IBFU-a za stono kliknite 5" +
+                $"\nZadnji račun request 6" +
                 $"\nZa izlaz iz aplikcije prisnite 0");
 
             string opcija = Console.ReadLine()??"";
@@ -58,11 +67,17 @@ namespace PrevoditeljKonzola
                     var ibfu = Console.ReadLine();
                     if ((ibfu ?? "").Trim().Length != 8)
                         Console.WriteLine("Ibfu mora sadžavati 8 karaktera");
+
+                    
                     else
                         prevoditeljSettings.IbfmZaStorno = ibfu??"";
                         await servis.Konfigurisi(esirSettings,prevoditeljSettings);
                         Console.WriteLine($"Kod slijedeć stona IBFU će biti setovan na {ibfu}");
                         
+                    break;
+                case "6":
+                    var response =await servis._esir.LastInvoice(EsirDriver.Modeli.esir.ReceiptLayoutType.Invoice, EsirDriver.Modeli.esir.ReceptImageFormat.Pdf, true);
+                    Console.WriteLine($"Resšpmese {(response?.invoiceNumber??"nema broja fakture")}");
                     break;
                 case "0":
                     servis.Stop();

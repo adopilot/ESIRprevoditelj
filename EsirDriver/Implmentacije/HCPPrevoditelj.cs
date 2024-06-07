@@ -6,12 +6,11 @@ using System.Text;
 using System.Threading.Tasks;
 using EsirDriver.Modeli.hcp;
 using System.Xml;
-using System.Reflection.PortableExecutable;
-using System.Reflection.Metadata;
 using System.IO;
 using System.Globalization;
 using EsirDriver.Modeli.esir;
-using System.Text.RegularExpressions;
+
+using System.Xml.Serialization;
 
 namespace EsirDriver.Implmentacije
 {
@@ -35,13 +34,23 @@ namespace EsirDriver.Implmentacije
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             try
             {
-                encoding = Encoding.GetEncoding(prevoditeljSettingModel?.EncodingName ?? "UTF-8");
+                encoding = Encoding.GetEncoding(prevoditeljSettingModel?.EncodingName ?? "windows-1250");
+
+                var files = Directory.GetFiles(_prevoditeljSettingModel.PathInputFiles)?.ToList() ?? new List<string>();
+                foreach (var file in files)
+                {
+                    File.Delete(file);
+                };
+
+
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
                 encoding = Encoding.UTF8;
             }
+
+
             
 
         }
@@ -187,21 +196,58 @@ namespace EsirDriver.Implmentacije
 
             return new PorukaFiskalnogPrintera() { IsError = false, LogLevel = LogLevel.Debug, MozeNastaviti = true, Poruka = $"Odrali smo cmd datkeu {cmdTxt} {num}" };
         }
-        private string bagajnikIzFootera(string input)
-        {
 
-            string pattern = @"Blag: (.+)";
-            Match match = Regex.Match(input, pattern);
-            if (match.Success)
-            {
-                string extractedName = match.Groups[1].Value;
-                return extractedName;
-            }
-            else
+        public static  string ExtractBeforeSemicolon(string input)
+        {
+            if (input == null)
             {
                 return null;
             }
+
+            
+
+            // Find the index of the semicolon
+            int semicolonIndex = input.IndexOf(';');
+
+            if (semicolonIndex <= -1)
+            {
+                return input;
+            }
+            
+
+            // Extract the substring between the colon and the semicolon
+            string result = input.Substring(0, semicolonIndex - 1).Trim();
+
+           
+           
+
+            return result;
         }
+        public  string ExtractAfterColon(string input)
+        {
+            if (input == null)
+            {
+                return null;
+            }
+
+            // Find the index of the colon
+            int colonIndex = input.IndexOf(':');
+
+            if (colonIndex <= 0)
+            {
+                return null;
+            }
+
+            // Extract the substring after the colon
+            string result = input.Substring(colonIndex + 1).Trim();
+
+            // Remove newline characters
+            
+
+            return result;
+        }
+
+       
 
         private async Task<PorukaFiskalnogPrintera> OdradiRCPDaoteku(string fileFullPath)
         {
@@ -235,6 +281,8 @@ namespace EsirDriver.Implmentacije
 
                 NumberStyles numberStyles = NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite ;
 
+                int rbr = 0;
+                List<int> arikliBezCijene = new List<int>();
 
                 // Iterate through each DATA element
                 foreach (XmlNode node in root.ChildNodes)
@@ -249,10 +297,11 @@ namespace EsirDriver.Implmentacije
                         //Ako imamo BRC atribut onda je to arikal red
                         if (!string.IsNullOrEmpty(brc))
                         {
+                            rbr++;
                             HcpArtOnRnModel hcpArtOnRnModel = new HcpArtOnRnModel();
                             hcpArtOnRnModel.Brc = brc;
                             int vat = 1;
-                            var vatS = node?.Attributes?["VAT"]?.Value ?? "1";
+                            var vatS = node?.Attributes?["VAT"]?.Value ?? "0";
                             int.TryParse(vatS, out vat);
                             hcpArtOnRnModel.Vat = vat;
 
@@ -272,7 +321,7 @@ namespace EsirDriver.Implmentacije
 
                             string amnS = (node?.Attributes?["AMN"]?.Value ?? "0").Replace(",", ".");
                             decimal amn = 0;
-                            decimal.TryParse(amnS, numberStyles,  CultureInfo.InvariantCulture, out amn);
+                            decimal.TryParse(amnS, numberStyles, CultureInfo.InvariantCulture, out amn);
 
                             hcpArtOnRnModel.Amn = amn;
 
@@ -285,50 +334,98 @@ namespace EsirDriver.Implmentacije
                             bool discaunt = false;
                             bool.TryParse(discauntS, out discaunt);
                             hcpArtOnRnModel.Discount = discaunt;
+
+                            if (hcpArtOnRnModel.Amn == 0 && hcpArtOnRnModel.Prc == 0)
+                            {
+                                continue;
+                            }
+                            else if (hcpArtOnRnModel.Brc != "0" && hcpArtOnRnModel.Amn != 0 && hcpArtOnRnModel.Prc == 0)
+                            {
+                                arikliBezCijene.Add(rbr);
+                            }
+                            if (hcpArtOnRnModel.Amn < 0)
+                            {
+                                hcpArtOnRnModel.Amn = -1 * hcpArtOnRnModel.Amn;
+
+                                invoiceRequest.transactionType = TranscationType.Refund;
+                                invoiceRequest.referentDocumentDT = DateTime.Today;
+                                invoiceRequest.referentDocumentNumber = $"0";
+                            }
+
                             stavke.Add(hcpArtOnRnModel);
                         }
                         //Ako imamo PAY atribut onda je to py red
                         else if (!string.IsNullOrEmpty(payS))
                         {
-
                             int pay = 0;
                             int.TryParse(payS, out pay);
 
                             string amnS = (node?.Attributes?["AMN"]?.Value ?? "0").Replace(",", ".");
                             decimal amn = 0;
                             decimal.TryParse(amnS, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out amn);
-
-
                             HcpPayOnRnModel payRed = new HcpPayOnRnModel() { Amn= amn, Pay= pay };
                             payStavke.Add(payRed);
-
-
-
                         }
-
-
-
-
-
                     }
 
                         
                 }
 
+                //Ako smo u stavkama našli arikle bez 
+                if (arikliBezCijene.Any())
+                {
+                    await OdgovoriIObrisi(fileFullPath, true, $"1 - \nStavke računa  {string.Join(',',arikliBezCijene)} neamj formiranu cijenu !   ");
+                    return new PorukaFiskalnogPrintera() { IsError=true, Poruka = $"Stavke računa  {string.Join(',', arikliBezCijene)} nemaju formiranu cijenu !", LogLevel = LogLevel.Error, MozeNastaviti = true };
+                }
+                if (!stavke.Any())
+                {
+                    _refundSet = string.Empty;
+                    _clientSet = string.Empty;
+                    _footerRows = new List<HcpFooterRowModel>();
+                    await OdgovoriIObrisi(fileFullPath, false, "Nemamo stavki samo payment onda je to close recept komanda koju ovdije namamo");
+                    return new PorukaFiskalnogPrintera() { IsError = false, LogLevel = LogLevel.Warning, MozeNastaviti = true, Poruka = "Nemamo stavki samo payment onda je to close recept komanda koju ovdije namamo" };
+                }
 
+                string kasa,  tip, broj,rn,rj;
 
                 foreach (var red in _footerRows)
                 {
                     if ((red?.Data??"").StartsWith("Blag:"))
                     {
-                        var blagajnik = bagajnikIzFootera(red?.Data??"");
+                        var blagajnik = ExtractAfterColon(red?.Data??"");
                         if (!string.IsNullOrEmpty(blagajnik))
                             invoiceRequest.cashier = blagajnik;
+
+                        continue;
                     }
-                    else
+                    else if ((red?.Data ?? "").StartsWith("Kasa:"))
                     {
-                        invoice.receiptFooterTextLines.Add(red?.Data ?? "");
+                        kasa = ExtractAfterColon("Kasa:");
+                        
                     }
+                    else if ((red?.Data ?? "").StartsWith("Rn:"))
+                    {
+                        rn = ExtractAfterColon("Rn:");
+                        
+                    }
+                    else if ((red?.Data ?? "").StartsWith("Broj:"))
+                    {
+                        broj = ExtractAfterColon("Broj:");
+                        
+                    }
+                    else if ((red?.Data ?? "").StartsWith("Tip:"))
+                    {
+                        tip = ExtractAfterColon("Broj:");
+
+                    }
+                    else if ((red?.Data ?? "").StartsWith("RJ:"))
+                    {
+                        var rjsemi = ExtractAfterColon("Broj:");
+                        rj 
+
+                    }
+                    invoice.receiptFooterTextLines.Add(red?.Data ?? "");
+                    
                 }
 
                 foreach (var red in stavke)
@@ -405,7 +502,7 @@ namespace EsirDriver.Implmentacije
             {
                 
                 await OdgovoriIObrisi(fileFullPath, true, $"1 - \nGreska kod stampanja raruna ex {ex.Message}");
-                return new PorukaFiskalnogPrintera() { Poruka = $"Greška u RCP-u {fileName} datokoom {ex.Message}", LogLevel = LogLevel.Debug, MozeNastaviti = true };
+                return new PorukaFiskalnogPrintera() { Poruka = $"Greška u RCP-u {fileName} datotekom {ex.Message}", LogLevel = LogLevel.Error, MozeNastaviti = true };
             }
 
 
@@ -450,10 +547,6 @@ namespace EsirDriver.Implmentacije
                         string town = node?.Attributes?["TOWN"]?.Value ?? "";
                         _clients.Add(new HcpClientRowModel() { Address=address, Ibk=ibk, Name=name, Town=town });
                     }
-                }
-                foreach (var row in _clients)
-                {
-                    Console.WriteLine("Klinet: " + row.Name);
                 }
                 await OdgovoriIObrisi(fileFullPath, false, "");
                 return new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Debug, MozeNastaviti = true, Poruka = "Obradili smo clinets.xml datoteku" };
@@ -592,10 +685,78 @@ namespace EsirDriver.Implmentacije
 
 
         }
+
         private async Task ObradiCmdReceptState(string fileFullPath)
         {
             try
             {
+                var receptState = await _esir.LastInvoice(ReceiptLayoutType.Slip, ReceptImageFormat.Png, true);
+   
+                if (receptState==null)
+                {
+                    await OdgovoriIObrisi(fileFullPath, true, $"Esir mi nije dao recept state pa ni ja Vama ne mogu isit datu");
+                }
+                var brRacStat = receptState?.invoiceNumber ?? "0";
+               var brRac = brRacStat.Length > 10 ? brRacStat.Substring(brRacStat.Length - 10) : brRacStat;
+
+      
+
+
+                // Create an instance of ReceiptState and populate it with data
+                var receiptState = new HcpReceptStateModel
+                {
+                    Amount = (receptState?.totalAmount??0),
+                    Difference = 0,
+                    ReceiptNumber =  brRac,
+                    RefoundReceiptNumber = brRac,
+                    ReceiptToRefund = 0,
+                    NumPay = 6,
+                    NumPlu = 0,
+                    Client = 0,
+                    Cashier = 255,
+                    FiscalDayStarted = false,
+                    FiscalReceiptStarted = false,
+                    RefoundMode = false,
+                    Pays = new List<Pay>
+            {
+                new Pay { Amount =  receptState?.totalAmount??0 },
+                new Pay { Amount = 0 },
+                new Pay { Amount = 0 },
+                new Pay { Amount = 0 },
+                new Pay { Amount = 0 },
+                new Pay { Amount = 0 }
+            }
+                };
+
+                // Serialize the object to XML and write it to a file
+
+                var filePath = Path.Combine(_prevoditeljSettingModel.PathOutputFiles, "bill_state.xml");
+
+                if (File.Exists(filePath))
+                    File.Delete(filePath);
+
+                await using (FileStream fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 4096, useAsync: true))
+                {
+                    await WriteXmlToStreamAsyncBillState(receiptState, fileStream);
+                }
+
+                await OdgovoriIObrisi(fileFullPath, false, "");
+            }
+
+            catch (Exception ex)
+            {
+                PorukaEvent.Invoke(this, new PorukaFiskalnogPrintera() { IsError = true, LogLevel = LogLevel.Error, MozeNastaviti = true, Poruka = $"Greška u odgovru recept state komande ex: {ex.Message}" });
+                await OdgovoriIObrisi(fileFullPath, true, $"Greška u generisanju  odgovra recept_state {ex.Message} ");
+            }
+
+        }
+                private async Task ObradiCmdReceptStateOldNeKorsite(string fileFullPath)
+        {
+            try
+            {
+
+
+
 
                 XmlDocument xmlDoc = new XmlDocument();
                 XmlDeclaration xmlDeclaration = xmlDoc.CreateXmlDeclaration("1.0", encoding.ToString(), "yes");
@@ -604,8 +765,8 @@ namespace EsirDriver.Implmentacije
                 root.SetAttribute("DIFFERENCE", "-1");
 
                 //TODO: Ovo ritam učitava nazad ostalo mislim da je nevažno pošalji ali prvo stpasi state
-                root.SetAttribute("RECEIPT_NUMBER", $"{_lastFiscalNumber}");
-                root.SetAttribute("REFOUND_RECEIPT_NUMBER", "0");
+                root.SetAttribute("RECEIPT_NUMBER", $"ADMIR H 1");
+                root.SetAttribute("REFOUND_RECEIPT_NUMBER", "ADMIR S 2");
                 root.SetAttribute("RECEIPT_TO_REFUND", "0");
                 root.SetAttribute("NUM_PAY", "6");
                 root.SetAttribute("NUM_PLU", "0");
@@ -648,6 +809,23 @@ namespace EsirDriver.Implmentacije
             using (XmlWriter writer = XmlWriter.Create(stream, new XmlWriterSettings { Async = true, Encoding = encoding }))
             {
                 xmlDoc.WriteTo(writer);
+                await writer.FlushAsync();
+            }
+        }
+
+        private static async Task WriteXmlToStreamAsyncBillState(HcpReceptStateModel receiptState, Stream stream)
+        {
+            XmlSerializer serializer = new XmlSerializer(typeof(HcpReceptStateModel));
+            XmlWriterSettings settings = new XmlWriterSettings
+            {
+                Async = true,
+                Indent = true,
+                Encoding = Encoding.UTF8
+            };
+
+            using (XmlWriter writer = XmlWriter.Create(stream, settings))
+            {
+                serializer.Serialize(writer, receiptState);
                 await writer.FlushAsync();
             }
         }

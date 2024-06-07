@@ -30,7 +30,7 @@ namespace EsirDriver.Modeli.esir
             public int taxGroupRevision { get; set; }
             public List<TaxItem> taxItems { get; set; }
             public string tin { get; set; }
-            public double totalAmount { get; set; }
+            public decimal? totalAmount { get; set; }
             public int totalCounter { get; set; }
             public int transactionTypeCounter { get; set; }
             public string verificationQRCode { get; set; }
@@ -39,11 +39,11 @@ namespace EsirDriver.Modeli.esir
 
         public class TaxItem
         {
-            public double amount { get; set; }
+            public decimal? amount { get; set; }
             public string categoryName { get; set; }
             public int categoryType { get; set; }
             public string label { get; set; }
-            public double rate { get; set; }
+            public decimal? rate { get; set; }
         }
 
 }

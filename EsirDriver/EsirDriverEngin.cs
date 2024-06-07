@@ -24,6 +24,7 @@ namespace EsirDriver
         private readonly JsonSerializerOptions _jsonSerializerOptions;
         private Modeli.esir.EsirStatusModel esirCurrent { get; set; }
 
+        private InvoiceResponseModel lastInvoiceResponseModel;
 
 
         public EsirDriverEngin()
@@ -189,7 +190,7 @@ namespace EsirDriver
                 {
                     try
                     {
-                        EsirErrorResopnse esirErrorResopnse = JsonSerializer.Deserialize<EsirErrorResopnse>(res);
+                        EsirErrorResopnse esirErrorResopnse = JsonSerializer.Deserialize<EsirErrorResopnse>(res,_jsonSerializerOptions);
                         return new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = true, LogLevel = LogLevel.Warning, Poruka = $"Nismo oštampali nefiskalni tekst sa greškom {esirErrorResopnse.message}" };
                     }
                     catch
@@ -213,6 +214,43 @@ namespace EsirDriver
 
 
         }
+
+        public async Task<InvoiceResponseModel> LastInvoice(ReceiptLayoutType receiptLayoutType, ReceptImageFormat receptImageFormat, bool includeHeaderAndFooter)
+        {
+            if (lastInvoiceResponseModel != null)
+                return lastInvoiceResponseModel;
+
+
+            try
+            {
+                var ado = this.ImamoLiConfig();
+                if (ado.IsError)
+                {
+                    PorukaEvent.Invoke(this, ado);
+                    return null;
+                }
+
+                var request = new HttpRequestMessage(HttpMethod.Get, $"/api/invoices/last?receiptLayout={receiptLayoutType.ToString()}&imageFormat={receptImageFormat.ToString()}&includeHeaderAndFooter={includeHeaderAndFooter.ToString()}");
+                HttpResponseMessage response = await _httpClient.SendAsync(request);
+                string res = await response.Content.ReadAsStringAsync();
+                response.EnsureSuccessStatusCode();
+
+                var all = JsonSerializer.Deserialize<EsirInvoiceFromDbModel>(res,_jsonSerializerOptions);
+
+                lastInvoiceResponseModel = all.invoiceResponse;
+                return lastInvoiceResponseModel;
+
+
+
+            }
+
+
+            catch (Exception ex) {
+                PorukaEvent.Invoke(this, new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = true, LogLevel = LogLevel.Error, Poruka = $"Nismo dobili zadnji račun sa greškom {ex.Message}" });
+                return null;
+            }
+          
+            }
 
         private async Task<PorukaFiskalnogPrintera> unesitePin(int pin)
         {
@@ -282,7 +320,7 @@ namespace EsirDriver
                 if (response.IsSuccessStatusCode)
                 {
                    esirCurrent = null;
-                   esirCurrent = JsonSerializer.Deserialize<EsirStatusModel>(res);
+                   esirCurrent = JsonSerializer.Deserialize<EsirStatusModel>(res,_jsonSerializerOptions);
 
                     if (esirCurrent == null)
                         return new PorukaFiskalnogPrintera() { IsError = true, LogLevel = LogLevel.Error, MozeNastaviti = false, Poruka = "ESIR status ima vrijednost null ne možemo nastaviti" };
@@ -397,6 +435,12 @@ namespace EsirDriver
 
                 invoiceRequestModel.invoiceRequest.invoiceType = _esirConfig.OperationMode;
 
+                if (invoiceRequestModel.invoiceRequest.transactionType == TranscationType.Refund) 
+                {
+                    invoiceRequestModel.invoiceRequest.referentDocumentNumber = $"{GetEsirUid()}-{GetEsirUid()}-{invoiceRequestModel?.invoiceRequest?.referentDocumentNumber}";
+                }
+
+
                 var request = new HttpRequestMessage(HttpMethod.Post, "/api/invoices/");
 
 
@@ -410,14 +454,15 @@ namespace EsirDriver
 
                 string res = await response.Content.ReadAsStringAsync();
 
+
                 if (response.StatusCode == System.Net.HttpStatusCode.OK )
                 {
-                    InvoiceResponseModel invoiceResponseModel = JsonSerializer.Deserialize<InvoiceResponseModel>(res);
-                    return invoiceResponseModel;
+                    lastInvoiceResponseModel = JsonSerializer.Deserialize<InvoiceResponseModel>(res,_jsonSerializerOptions);
+                    return lastInvoiceResponseModel;
                 }
                 else
                 {
-                    EsirErrorResopnse esirErrorResopnse = JsonSerializer.Deserialize<EsirErrorResopnse>(res);
+                    EsirErrorResopnse esirErrorResopnse = JsonSerializer.Deserialize<EsirErrorResopnse>(res,_jsonSerializerOptions);
 
                     
 

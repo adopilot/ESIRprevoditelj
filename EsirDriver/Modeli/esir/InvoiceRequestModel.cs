@@ -21,7 +21,7 @@ namespace EsirDriver.Modeli.esir
     }
     public class PaymentModel
     {
-        public decimal amount { get; set; }
+        public decimal? amount { get; set; }
         public PaymentTypes paymentType { get; set; }
     }
 
@@ -30,11 +30,11 @@ namespace EsirDriver.Modeli.esir
         public string name { get; set; }
         public string gtin { get; set; }
         public List<string> labels { get; set; } = new List<string>();
-        public decimal unitPrice { get; set; }
-        public decimal quantity { get; set; }
-        public decimal totalAmount { get; set; }
-        public decimal discount { get; set; }
-        public decimal discountAmount { get; set; }
+        public decimal? unitPrice { get; set; }
+        public decimal? quantity { get; set; }
+        public decimal? totalAmount { get; set; }
+        public decimal? discount { get; set; }
+        public decimal? discountAmount { get; set; }
 
     }
 
