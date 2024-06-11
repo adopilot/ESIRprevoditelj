@@ -19,8 +19,8 @@ namespace EsirDriver.Modeli
         public PrevodimoKomandePrintera KomandePrintera { get; set; }= PrevodimoKomandePrintera.HcpFBiH;
         public string PodrazumjevanaPoreskaStopa { get; set; } = "F";
 
-        public string IbfmZaStorno { get; set; }
 
+        public string DefSklSifra { get; set; } = "000";
     }
 
     public enum PrevodimoKomandePrintera

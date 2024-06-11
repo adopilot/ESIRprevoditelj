@@ -16,7 +16,7 @@ namespace EsirDriver
         public event EventHandler<PorukaFiskalnogPrintera>? MessageReceived;
 
         private PeriodicTimer _timer = new PeriodicTimer(Timeout.InfiniteTimeSpan);
-        private EsirConfigModel _esirConfig { get; set; } = new EsirConfigModel();
+        private EsirConfigModel _esirConfig { get; set; }
         private Modeli.PrevoditeljSettingModel _prevoditeljSettings { get; set; } = new PrevoditeljSettingModel() { Enabled=false };
         private IFiskalniPrevoditelj _fiskalniPrevoditelj;
         private string _stateInfoMsg { get; set; } = "";
@@ -24,18 +24,21 @@ namespace EsirDriver
 
         private bool _preplacenNaEventePrevoditelja = false;
         
-        
 
 
 
 
 
-        public EsirDriverEngin _esir;
+
+
+        public EsirDriverEngin _esir { get; set; }
         
         public FiskalPrevoditeljToEsir(EsirConfigModel esirConfigModel,PrevoditeljSettingModel prevoditeljSettingModel) 
         {
             _esir = new EsirDriverEngin();
             _esir.PorukaEvent += _esir_PorukaEvent;
+
+           
 
             _ = Konfigurisi(esirConfigModel, prevoditeljSettingModel);
             _ = RunPeriodicTaskAsync();
@@ -43,11 +46,8 @@ namespace EsirDriver
 
         private void _esir_PorukaEvent(object? sender, PorukaFiskalnogPrintera e)
         {
-            if (e != null)
-            {
-                OnMessageReceived(e);
-            }
 
+            OnMessageReceived(e);
         }
 
         private async Task RunPeriodicTaskAsync()
@@ -92,6 +92,7 @@ namespace EsirDriver
                 
                 _prevoditeljSettings = prevoditeljSettingModel;
 
+             
                 var configMsg = await _esir.Konfigurisi(this._esirConfig);
                 if (!(configMsg?.MozeNastaviti ?? false))
                     {
@@ -174,8 +175,7 @@ namespace EsirDriver
                 _fiskalniPrevoditelj.PorukaEvent += _fiskalniPrevoditelj_PorukaEvent;
                 _preplacenNaEventePrevoditelja = true;
             }
-
-            
+           
 
 
             _timer.Period = TimeSpan.FromMilliseconds(_prevoditeljSettings.ReadFolderEvryMiliSec);
@@ -194,7 +194,7 @@ namespace EsirDriver
                 _fiskalniPrevoditelj.PorukaEvent -= _fiskalniPrevoditelj_PorukaEvent;
             }
             _preplacenNaEventePrevoditelja = false;
-            
+
         }
 
         protected virtual void OnMessageReceived(PorukaFiskalnogPrintera poruka)

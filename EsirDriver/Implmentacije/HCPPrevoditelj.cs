@@ -209,14 +209,14 @@ namespace EsirDriver.Implmentacije
             // Find the index of the semicolon
             int semicolonIndex = input.IndexOf(';');
 
-            if (semicolonIndex <= -1)
+            if (semicolonIndex <= 0)
             {
                 return input;
             }
             
 
             // Extract the substring between the colon and the semicolon
-            string result = input.Substring(0, semicolonIndex - 1).Trim();
+            string result = input.Substring(0, semicolonIndex ).Trim();
 
            
            
@@ -386,7 +386,7 @@ namespace EsirDriver.Implmentacije
                     return new PorukaFiskalnogPrintera() { IsError = false, LogLevel = LogLevel.Warning, MozeNastaviti = true, Poruka = "Nemamo stavki samo payment onda je to close recept komanda koju ovdije namamo" };
                 }
 
-                string kasa,  tip, broj,rn,rj;
+                string kasa =null, tip = null, broj = null, rn = null, rj = null;
 
                 foreach (var red in _footerRows)
                 {
@@ -400,33 +400,40 @@ namespace EsirDriver.Implmentacije
                     }
                     else if ((red?.Data ?? "").StartsWith("Kasa:"))
                     {
-                        kasa = ExtractAfterColon("Kasa:");
+                        kasa = ExtractAfterColon(red.Data);
                         
                     }
                     else if ((red?.Data ?? "").StartsWith("Rn:"))
                     {
-                        rn = ExtractAfterColon("Rn:");
-                        
+                        rn = ExtractAfterColon(red.Data);
+                    }
+                    else if ((red?.Data ?? "").StartsWith("Br.dok:"))
+                    {
+                        broj = ExtractAfterColon(red.Data);
+
                     }
                     else if ((red?.Data ?? "").StartsWith("Broj:"))
                     {
-                        broj = ExtractAfterColon("Broj:");
+                        broj = ExtractAfterColon(red.Data);
                         
                     }
                     else if ((red?.Data ?? "").StartsWith("Tip:"))
                     {
-                        tip = ExtractAfterColon("Broj:");
+                        tip = ExtractAfterColon(red.Data);
 
                     }
                     else if ((red?.Data ?? "").StartsWith("RJ:"))
                     {
-                        var rjsemi = ExtractAfterColon("Broj:");
-                        rj 
+                        var arj = ExtractAfterColon(red.Data);
+                        rj = ExtractBeforeSemicolon(arj);
+
 
                     }
                     invoice.receiptFooterTextLines.Add(red?.Data ?? "");
                     
                 }
+                string requestId = $"{(string.IsNullOrEmpty(rn) ? DateTime.Today.Year.ToString() + "X" : "")}{rj ?? _prevoditeljSettingModel.DefSklSifra}X{tip ?? kasa}X{((rn ?? broj) ?? "").Replace("-", "A")}";
+
 
                 foreach (var red in stavke)
                 {
@@ -479,7 +486,8 @@ namespace EsirDriver.Implmentacije
 
                 invoice.invoiceRequest = invoiceRequest;
 
-                var ado = await _esir.OstampajRacun(invoice);
+
+                var ado = await _esir.OstampajRacun(invoice, requestId);
 
                 
 

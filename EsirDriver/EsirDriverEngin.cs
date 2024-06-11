@@ -65,6 +65,7 @@ namespace EsirDriver
                 _httpClient = new HttpClient() { BaseAddress = uri , Timeout= TimeSpan.FromSeconds(_esirConfig.TimeoutInSec)};
                 _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_esirConfig.apiKey}");
 
+                if (PorukaEvent != null) 
                 PorukaEvent.Invoke(this, new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Information, MozeNastaviti = true, Poruka = $"Udesio sam http clienta na {uri}" });
 
 
@@ -414,16 +415,15 @@ namespace EsirDriver
 
         
 
-      public async Task<InvoiceResponseModel>  OstampajRacun(InvoiceModel invoiceRequestModel)
+      public async Task<InvoiceResponseModel>  OstampajRacun(InvoiceModel invoiceRequestModel,string requestId = null )
         {
             try
             {
                 if (ImamoLiConfig().IsError)
                 {
-                    PorukaEvent.Invoke(this,new PorukaFiskalnogPrintera() { IsError=true,MozeNastaviti=false, LogLevel = LogLevel.Error, Poruka=$"Nemožemo štampati faktru kada printer nije knifugrsan"});
+                    PorukaEvent.Invoke(this, new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = false, LogLevel = LogLevel.Error, Poruka = $"Nemožemo štampati faktru kada printer nije knifugrsan" });
                     throw new Exception("Fiskalni printer nije konfigursan");
                 }
-
 
                 var payment = invoiceRequestModel.invoiceRequest.payment.Sum(x=>x.amount);
                 var total = invoiceRequestModel.invoiceRequest.items.Sum(x=>x.totalAmount);
@@ -450,6 +450,11 @@ namespace EsirDriver
                 var content = new StringContent(json, null, "application/json");
                 request.Content = content;
 
+                if (!string.IsNullOrEmpty(requestId))
+                {
+                    request.Headers.Add("RequestId", requestId);
+                }
+
                 var response = await _httpClient.SendAsync(request);
 
                 string res = await response.Content.ReadAsStringAsync();
@@ -458,6 +463,7 @@ namespace EsirDriver
                 if (response.StatusCode == System.Net.HttpStatusCode.OK )
                 {
                     lastInvoiceResponseModel = JsonSerializer.Deserialize<InvoiceResponseModel>(res,_jsonSerializerOptions);
+                    PorukaEvent.Invoke(this, new PorukaFiskalnogPrintera() { IsError = false, LogLevel = LogLevel.Information, MozeNastaviti = true, Poruka = $"Oštampali smo fiskalni račun" });
                     return lastInvoiceResponseModel;
                 }
                 else

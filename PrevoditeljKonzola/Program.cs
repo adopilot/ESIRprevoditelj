@@ -28,6 +28,8 @@ namespace PrevoditeljKonzola
                 PathInputFiles = "C:\\HCP\\TO_FP",
                 PathOutputFiles = "C:\\HCP\\FROM_FP",
                 EncodingName = "windows-1250",
+                DefSklSifra="751"
+                   
                  
             };
             EsirDriver.FiskalPrevoditeljToEsir servis = new EsirDriver.FiskalPrevoditeljToEsir(esirSettings,prevoditeljSettings);
@@ -70,14 +72,13 @@ namespace PrevoditeljKonzola
 
                     
                     else
-                        prevoditeljSettings.IbfmZaStorno = ibfu??"";
                         await servis.Konfigurisi(esirSettings,prevoditeljSettings);
                         Console.WriteLine($"Kod slijedeć stona IBFU će biti setovan na {ibfu}");
                         
                     break;
                 case "6":
                     var response =await servis._esir.LastInvoice(EsirDriver.Modeli.esir.ReceiptLayoutType.Invoice, EsirDriver.Modeli.esir.ReceptImageFormat.Pdf, true);
-                    Console.WriteLine($"Resšpmese {(response?.invoiceNumber??"nema broja fakture")}");
+                    Console.WriteLine($"Response ima broj fakture: {(response?.invoiceNumber??"nema broja fakture")}");
                     break;
                 case "0":
                     servis.Stop();
@@ -119,7 +120,7 @@ namespace PrevoditeljKonzola
             if (e.LogLevel >= LogLevel.Information)
             {
                 Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Lgl: {e.LogLevel} {(e.IsError ? "err!" : "")} Msg: \"{e.Poruka}\" {(e.MozeNastaviti?"; može nastaviti":"; ne može nastaviti")       } ");
-            }
+              }
         }
 
     }
