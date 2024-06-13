@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EsirDriver", "EsirDriver\Es
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PrevoditeljKonzola", "PrevoditeljKonzola\PrevoditeljKonzola.csproj", "{3EC4ADAD-DF9B-4CF1-B8BA-BDC8D895C13D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiskalniPrevoditelj", "FiskalniPrevoditelj\FiskalniPrevoditelj.csproj", "{42AF5F2F-2651-4373-AF5A-755720AF6D96}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FiskalniPrevoditelj", "FiskalniPrevoditelj\FiskalniPrevoditelj.csproj", "{42AF5F2F-2651-4373-AF5A-755720AF6D96}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

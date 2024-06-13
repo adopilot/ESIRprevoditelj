@@ -14,11 +14,12 @@ namespace PrevoditeljKonzola
             //var prevo new EsirDriver.Modeli.EsirSettingsModel() { apiKey = "adoa" }
             var esirSettings = new EsirDriver.Modeli.EsirConfigModel() 
             {
-                apiKey = "5ead197a9fdf6600c82aff1a803a1625", 
+                apiKey = "5ead197a9fdf6600c82aff1a803a1625sex", 
                 pin = 2011, 
                 webserverAddress = "http://172.16.0.9:3566", 
                 authorizeLocalClients = true, authorizeRemoteClients = true, 
                 OperationMode = EsirDriver.Modeli.esir.InvoiceType.Normal, 
+                
                 TimeoutInSec = 20 };
             var prevoditeljSettings = new EsirDriver.Modeli.PrevoditeljSettingModel() {
                 AutomaticallyCloseRecept = true,
@@ -28,7 +29,8 @@ namespace PrevoditeljKonzola
                 PathInputFiles = "C:\\HCP\\TO_FP",
                 PathOutputFiles = "C:\\HCP\\FROM_FP",
                 EncodingName = "windows-1250",
-                DefSklSifra="751"
+                DefSklSifra="751",
+                 
                    
                  
             };

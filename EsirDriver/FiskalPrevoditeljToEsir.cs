@@ -99,7 +99,7 @@ namespace EsirDriver
                         _prevoditeljSettings.Enabled = false;
                         _stateInfoMsg = $"Nismo uspijeli konfigusati ESIR poruka:  {(configMsg?.Poruka ?? "null")}";
                         _stateIsError = true;
-                        OnMessageReceived( configMsg ?? new PorukaFiskalnogPrintera() { MozeNastaviti = false, IsError = true, LogLevel = LogLevel.Critical, Poruka = "Nisam uspijeo konfigursati  esir" });
+                        //OnMessageReceived( configMsg ?? new PorukaFiskalnogPrintera() { MozeNastaviti = false, IsError = true, LogLevel = LogLevel.Critical, Poruka = "Nisam uspijeo konfigursati  esir" });
                         return configMsg ?? new PorukaFiskalnogPrintera() { MozeNastaviti = false, IsError = true, LogLevel = LogLevel.Critical, Poruka = "Nisam uspijeo konfigursati  esir" };
                     }
 

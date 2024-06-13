@@ -1,0 +1,92 @@
+﻿
+@page "/settings"
+
+@using Microsoft.FluentUI.AspNetCore.Components
+@using System.Diagnostics
+@inject NavigationManager Navigation
+@inject EsirDriver.FiskalPrevoditeljToEsir _engin
+@inject IToastService _toastService
+@inject Servisi.ConfigSaveServis _configServis;
+@inject IDialogService _dialogService;
+
+
+<FluentStack Orientation="Orientation.Horizontal" Width="100%" HorizontalAlignment="HorizontalAlignment.Center">
+<FluentBodyContent >
+        <h3>Postavke prevoditalja</h3>
+        <FluentTextField Style="width: 100%;" @bind-Value="prevoditeljSettingModel.PathInputFiles" Label="Čitamo HCP datoeke iz folrear (to_fp)"></FluentTextField>
+        <FluentTextField Style="width: 100%;" @bind-Value="prevoditeljSettingModel.PathOutputFiles" Label="Odgovaramo HCP datoeke u folder (from_fp)"></FluentTextField>
+        <FluentNumberField Style="width: 100%;" @bind-Value="prevoditeljSettingModel.ReadFolderEvryMiliSec" Min="100" Label="Čitaj folder svakih milisekunid "></FluentNumberField>
+        <FluentTextField Style="width: 100%;" @bind-Value="prevoditeljSettingModel.DefSklSifra" Label=" Podrazumjevana šifrra skaldišat"></FluentTextField>
+        
+        <FluentDivider Style="width:100%;" Role="DividerRole.Presentation"></FluentDivider>
+    
+    <br />
+        <h3>Postavke fiskalnog printera</h3>
+        <FluentNumberField Step="1" Min="1"  @bind-Value="esirConfigModel.TimeoutInSec" Label="HTTP request time out in sec"></FluentNumberField>
+        <FluentTextField @bind-Value="esirConfigModel.apiKey" Label="Api ključ"></FluentTextField>
+        <FluentTextField @bind-Value="esirConfigModel.webserverAddress" Label="Web adresa EISR api-a"></FluentTextField>
+        <FluentNumberField  @bind-Value="esirConfigModel.pin" Label="Pin uređaja"></FluentNumberField>
+        <FluentCheckbox @bind-Value="@prevoditeljSettingModel.Enabled" Label="Upaljen" />
+
+        <br />
+        <FluentButton OnClick="@onClick" Appearance="Appearance.Accent">Save</FluentButton>
+    </FluentBodyContent>
+</FluentStack>
+
+
+@code {
+
+    private EsirDriver.Modeli.EsirConfigModel esirConfigModel { get; set; } = new EsirDriver.Modeli.EsirConfigModel();
+    private EsirDriver.Modeli.PrevoditeljSettingModel prevoditeljSettingModel { get; set; } = new EsirDriver.Modeli.PrevoditeljSettingModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            esirConfigModel = await _configServis.GetEsirConfg();
+            prevoditeljSettingModel = await _configServis.GetPrevoditeljConfg();
+        }
+        catch(Exception ex)
+        {
+            _toastService.ShowToast(ToastIntent.Warning, $"Greška u učitavnju postavki ex {ex.Message}");
+        }
+
+
+    }
+
+
+    async private void onClick()
+    {
+        try
+        {
+
+            var configEsirSave = await _configServis.SetEsirConfg(esirConfigModel);
+            _toastService.ShowToast(configEsirSave.Valid ? ToastIntent.Success : ToastIntent.Error, configEsirSave.Msg);
+
+            var configPrevoditeljSave = await _configServis.SetPrevoditeljConfg(prevoditeljSettingModel);
+
+            _toastService.ShowToast(configPrevoditeljSave.Valid ? ToastIntent.Success : ToastIntent.Error, configPrevoditeljSave.Msg);
+
+
+            var configSaveMsg = await _engin.Konfigurisi(esirConfigModel, prevoditeljSettingModel);
+
+            if (configSaveMsg.LogLevel >= EsirDriver.Modeli.LogLevel.Warning)
+            {
+                await _dialogService.ShowWarningAsync(configSaveMsg.Poruka, "Proglem prilikom konfiguracije");
+
+            }
+            else
+            {
+                _toastService.ShowInfo(configSaveMsg.Poruka);
+            }
+
+        }
+        catch (Exception ex)
+        {
+            // Handle any exceptions
+            Console.WriteLine($"Error saving data: {ex.Message}");
+            var message = $"Greška u spašavaanju postavki ex:{ex.Message}";
+            _toastService.ShowToast(ToastIntent.Error, message);
+        }
+    }
+    }

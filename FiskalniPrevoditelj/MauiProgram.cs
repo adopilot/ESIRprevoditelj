@@ -1,4 +1,5 @@
-﻿using EsirDriver;
+﻿
+using EsirDriver;
 using Microsoft.Extensions.Logging;
 using Microsoft.FluentUI.AspNetCore.Components;
 
@@ -27,6 +28,9 @@ namespace FiskalniPrevoditelj
             FiskalPrevoditeljToEsir fiskalPrevoditeljToEsir = new FiskalPrevoditeljToEsir(new EsirDriver.Modeli.EsirConfigModel(), new EsirDriver.Modeli.PrevoditeljSettingModel() { PathInputFiles = "inicijalizacija" });
 
             builder.Services.AddSingleton<FiskalPrevoditeljToEsir>(fiskalPrevoditeljToEsir);
+            builder.Services.AddSingleton<Servisi.ConfigSaveServis>();
+
+
 
             return builder.Build();
         }

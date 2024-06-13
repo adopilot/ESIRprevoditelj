@@ -18,10 +18,7 @@ namespace KasaKlijent
 
 
             builder.Services.AddMauiBlazorWebView();
-
-            FiskalPrevoditeljToEsir fiskalPrevoditeljToEsir = new FiskalPrevoditeljToEsir(new EsirDriver.Modeli.EsirConfigModel(), new EsirDriver.Modeli.PrevoditeljSettingModel() { PathInputFiles="inicijalizacija" });
-
-            builder.Services.AddSingleton<FiskalPrevoditeljToEsir>(fiskalPrevoditeljToEsir);
+            builder.Services.AddSingleton<FiskalPrevoditeljToEsir>();
 
 
 #if DEBUG
