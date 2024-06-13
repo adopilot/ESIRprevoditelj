@@ -12,7 +12,7 @@ namespace EsirDriver.Modeli
         public bool Enabled { get; set; }
         public string PathInputFiles { get; set; }
         public string PathOutputFiles { get; set; }
-        public int ReadFolderEvryMiliSec { get; set; } = 3000;
+        public int ReadFolderEvryMiliSec { get; set; } = 1000;
         public bool AutomaticallyCloseRecept { get; set; } = true;
         public string EncodingName { get; set; } = "windows-1250";
         public PrevodimoKomandePrintera KomandePrintera { get; set; }= PrevodimoKomandePrintera.HcpFBiH;

@@ -15,7 +15,7 @@ namespace EsirDriver.Modeli
         public string webserverAddress { get; set; }
         public int pin { get; set; }
 
-        public int TimeoutInSec { get; set; } = 10;
+        public int TimeoutInSec { get; set; } = 3;
 
         public InvoiceType OperationMode { get; set; } = InvoiceType.Training;
         
