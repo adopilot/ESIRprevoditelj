@@ -33,22 +33,25 @@
 
     private EsirDriver.Modeli.EsirConfigModel esirConfigModel { get; set; } = new EsirDriver.Modeli.EsirConfigModel();
     private EsirDriver.Modeli.PrevoditeljSettingModel prevoditeljSettingModel { get; set; } = new EsirDriver.Modeli.PrevoditeljSettingModel();
-        private LogLevel logLevel { get; set; } = LogLevel.Trace;
+    private LogLevel logLevel { get; set; } = LogLevel.Debug;
 
     FluentDataGrid<PorukaFiskalnogPrintera> gridPoruka;
-    private List<PorukaFiskalnogPrintera> poruke = new List<PorukaFiskalnogPrintera>() { new PorukaFiskalnogPrintera() { MozeNastaviti=true, LogLevel= LogLevel.Information, Poruka="Upalio sam se" } };
+    //private List<PorukaFiskalnogPrintera> poruke = new List<PorukaFiskalnogPrintera>() { new PorukaFiskalnogPrintera() { MozeNastaviti=true, LogLevel= LogLevel.Information, Poruka="Upalio sam se" } };
     public IQueryable<PorukaFiskalnogPrintera> data
     {
-        get { return poruke.AsQueryable<PorukaFiskalnogPrintera>(); }
+
+        get { return buferListe.Reverse().AsQueryable<PorukaFiskalnogPrintera>(); }
     }
 
-
+    private Servisi.SlidingBuffer<PorukaFiskalnogPrintera> buferListe = new Servisi.SlidingBuffer<PorukaFiskalnogPrintera>(20);
 
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
+
+
             logLevelItems = GetLogLevels();
             _engin.MessageReceived += Servis_MessageReceived;
             esirConfigModel = await _configServis.GetEsirConfg();
@@ -72,7 +75,7 @@
     {
         if (e != null && e.LogLevel >= logLevel )
         {
-            poruke.Insert(0,e);
+            buferListe.Add(e);
             await gridPoruka.RefreshDataAsync();
         }
     }
