@@ -2,6 +2,7 @@
 @using Microsoft.FluentUI.AspNetCore.Components
 @using System.Diagnostics
 @using EsirDriver.Modeli
+@using Velopack
 @inject NavigationManager Navigation
 @inject EsirDriver.FiskalPrevoditeljToEsir _engin
 @inject IToastService _toastService
@@ -45,15 +46,42 @@
 
     private Servisi.SlidingBuffer<PorukaFiskalnogPrintera> buferListe = new Servisi.SlidingBuffer<PorukaFiskalnogPrintera>(20);
 
+    private async Task UpdateMyApp()
+    {
+
+        try
+        {
+            var mgr = new UpdateManager("https://driver.pf.robot.ba/");
+
+            // check for new version
+            var newVersion = await mgr.CheckForUpdatesAsync();
+            if (newVersion == null)
+                return; // no update available
+
+
+
+            // download new version
+            await mgr.DownloadUpdatesAsync(newVersion);
+
+            // install new version and restart app
+            mgr.ApplyUpdatesAndRestart(newVersion);
+
+        }
+        catch (Exception ex)
+        {
+            _toastService.ShowWarning($"Nismo se uspijeli ažuriari sa greško:{ex.Message}");
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-
-
+            _toastService.ShowInfo("App upaljena sa verziihjm 4.0.8");
+            await UpdateMyApp();
             logLevelItems = GetLogLevels();
             _engin.MessageReceived += Servis_MessageReceived;
+            buferListe.Add(new PorukaFiskalnogPrintera(){ IsError=false, MozeNastaviti=true, LogLevel= LogLevel.Debug, Poruka="Upalio smo app na ver 4.0.8"});
             esirConfigModel = await _configServis.GetEsirConfg();
             prevoditeljSettingModel = await _configServis.GetPrevoditeljConfg();
             await _engin.Konfigurisi(esirConfigModel, prevoditeljSettingModel);

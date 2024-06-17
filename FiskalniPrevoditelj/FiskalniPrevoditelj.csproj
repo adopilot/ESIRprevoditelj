@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFrameworks>net8.0-windows10.0.19041.0</TargetFrameworks>
-        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net8.0-windows10.0.19041.0</TargetFrameworks>
+        
         <!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
         <!-- <TargetFrameworks>$(TargetFrameworks);net8.0-tizen</TargetFrameworks> -->
 
@@ -39,6 +39,8 @@
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
         <DefaultLanguage>bs-latn-ba</DefaultLanguage>
         <WindowsPackageType>MSIX</WindowsPackageType>
+        <SignAssembly>False</SignAssembly>
+        <AssemblyName>FiskalniPrevoditelj</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -67,6 +69,7 @@
         <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.60" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="8.0.60" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
+        <PackageReference Include="Velopack" Version="0.0.359" />
     </ItemGroup>
 
     <ItemGroup>

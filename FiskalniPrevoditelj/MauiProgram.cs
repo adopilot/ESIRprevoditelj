@@ -2,6 +2,7 @@
 using EsirDriver;
 using Microsoft.Extensions.Logging;
 using Microsoft.FluentUI.AspNetCore.Components;
+using Velopack;
 
 namespace FiskalniPrevoditelj
 {
@@ -30,7 +31,7 @@ namespace FiskalniPrevoditelj
             builder.Services.AddSingleton<FiskalPrevoditeljToEsir>(fiskalPrevoditeljToEsir);
             builder.Services.AddSingleton<Servisi.ConfigSaveServis>();
 
-
+            VelopackApp.Build().Run();
 
             return builder.Build();
         }
