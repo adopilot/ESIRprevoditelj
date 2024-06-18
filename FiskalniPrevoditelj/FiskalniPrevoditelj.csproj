@@ -62,13 +62,14 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.7.2" />
+        <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.8.0" />
         <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Emoji" Version="4.6.0" />
-        <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="4.7.2" />
+        <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="4.8.0" />
         <PackageReference Include="Microsoft.Maui.Controls" Version="8.0.60" />
         <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.60" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="8.0.60" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
+        <PackageReference Include="System.Threading" Version="4.3.0" />
         <PackageReference Include="Velopack" Version="0.0.359" />
     </ItemGroup>
 

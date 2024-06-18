@@ -15,7 +15,6 @@ namespace FiskalniPrevoditelj.Servisi
         {
             EsirDriver.Modeli.EsirConfigModel model = new EsirDriver.Modeli.EsirConfigModel();
 
-
             model.webserverAddress = await SecureStorage.Default.GetAsync("webserverAddress") ?? "";
             int pinInt = 0;
             int.TryParse((await SecureStorage.Default.GetAsync("pin") ?? "0"), out pinInt);
@@ -37,12 +36,28 @@ namespace FiskalniPrevoditelj.Servisi
             int.TryParse((await SecureStorage.Default.GetAsync("TimeoutInSec") ?? "3"), out toInt);
 
             model.TimeoutInSec = toInt;
-
-
-
             return model;
-
-
+        }
+        
+        public async Task<AppPostavkeModel> GetAppConfig()
+        {
+            AppPostavkeModel appPostavkeModel = new AppPostavkeModel();
+            bool palimSe = false;
+            bool.TryParse(await SecureStorage.Default.GetAsync(nameof(appPostavkeModel.RunAppOnWindowsStartUp) ??"false" ),out palimSe);
+            appPostavkeModel.RunAppOnWindowsStartUp = palimSe;
+            return appPostavkeModel;
+        }
+        public async Task<PocoMsg> SetAppConfig(AppPostavkeModel appPostavke)
+        {
+            try
+            {
+                await SecureStorage.Default.SetAsync(nameof(appPostavke.RunAppOnWindowsStartUp), (appPostavke?.RunAppOnWindowsStartUp ?? false).ToString());
+                return new PocoMsg() { Valid = true, Msg = "Spasili smo postavke aplikcije" };
+            }
+            catch (Exception ex)
+            {
+                return new PocoMsg() { Msg = $"Greška kod spašavanja postavki aplikcije ex:{ex.Message}" };
+            }
         }
 
         public async Task<PocoMsg> SetEsirConfg(EsirDriver.Modeli.EsirConfigModel model)
