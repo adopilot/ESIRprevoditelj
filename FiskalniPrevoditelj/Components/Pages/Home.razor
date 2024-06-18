@@ -8,7 +8,7 @@
 @inject IToastService _toastService
 @inject Servisi.ConfigSaveServis _configServis
 @inject IDialogService _dialogService
-
+@inject Servisi.StateServis _statueServis;
 
 <style>
 
@@ -30,6 +30,8 @@
 
 
 @code {
+    //private string verzija { get; set; } = "4.1.1";
+
     private Dictionary<string, string> logLevelItems;
 
     private EsirDriver.Modeli.EsirConfigModel esirConfigModel { get; set; } = new EsirDriver.Modeli.EsirConfigModel();
@@ -51,25 +53,34 @@
 
         try
         {
-            var mgr = new UpdateManager("https://driver.pf.robot.ba/");
-
-            // check for new version
-            var newVersion = await mgr.CheckForUpdatesAsync();
-            if (newVersion == null)
-                return; // no update available
+            if (_statueServis.FirstRun)
+            {
+                _statueServis.FirstRun = false;
+                var mgr = new UpdateManager("https://driver.pf.robot.ba/");
 
 
+                
+                // check for new version
+                var newVersion = await mgr.CheckForUpdatesAsync();
+                if (newVersion == null)
+                {
+                    
+                    return; // no update available
+                }
 
-            // download new version
-            await mgr.DownloadUpdatesAsync(newVersion);
+                _toastService.ShowInfo($"Našli smo novu verziu app {(newVersion?.BaseRelease?.Version.Release ?? "x.x.x")} istu pokušavamo preuzeti");
+                
+                // download new version
+                await mgr.DownloadUpdatesAsync(newVersion);
 
-            // install new version and restart app
-            mgr.ApplyUpdatesAndRestart(newVersion);
-
+                _toastService.ShowInfo($"Instalriamo novu verziju aplikcije molimo vas za stpljenje {(newVersion?.TargetFullRelease?.Version.Release ?? "x.x.x")}");
+                // install new version and restart app
+                mgr.ApplyUpdatesAndRestart(newVersion);
+            }
         }
         catch (Exception ex)
         {
-            _toastService.ShowWarning($"Nismo se uspijeli ažuriari sa greško:{ex.Message}");
+            _toastService.ShowWarning($"Nismo se uspijeli ažuriari sa greškom:{ex.Message}");
         }
     }
 
@@ -77,23 +88,20 @@
     {
         try
         {
-            _toastService.ShowInfo("App upaljena sa verziihjm 4.0.8");
+            
+            _toastService.ShowInfo($"App upaljena sa verzijom 4.1.2 ");
             await UpdateMyApp();
             logLevelItems = GetLogLevels();
             _engin.MessageReceived += Servis_MessageReceived;
-            buferListe.Add(new PorukaFiskalnogPrintera(){ IsError=false, MozeNastaviti=true, LogLevel= LogLevel.Debug, Poruka="Upalio smo app na ver 4.0.8"});
+            buferListe.Add(new PorukaFiskalnogPrintera(){ IsError=false, MozeNastaviti=true, LogLevel= LogLevel.Debug, Poruka=$"Upalio smo app na ver 4.1.2 "});
             esirConfigModel = await _configServis.GetEsirConfg();
             prevoditeljSettingModel = await _configServis.GetPrevoditeljConfg();
             await _engin.Konfigurisi(esirConfigModel, prevoditeljSettingModel);
 
-
-
-
-
-
-        }
+    }
         catch (Exception ex)
         {
+            _toastService.ShowError($"Greška u inicijalizaiji sa ex:{ex.Message}");
 
         }
 

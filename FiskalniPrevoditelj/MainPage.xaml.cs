@@ -8,6 +8,7 @@ namespace FiskalniPrevoditelj
         {
             InitializeComponent();
             Loaded += MainPage_Loaded;
+            
         }
 
       

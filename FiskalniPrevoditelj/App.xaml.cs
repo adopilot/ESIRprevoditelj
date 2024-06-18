@@ -7,7 +7,7 @@ namespace FiskalniPrevoditelj
         public App()
         {
             InitializeComponent();
-
+            
             MainPage = new MainPage();
         }
     }

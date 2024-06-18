@@ -23,9 +23,9 @@
     <br />
         <h3>Postavke fiskalnog printera</h3>
         <FluentNumberField Step="1" Min="1"  @bind-Value="esirConfigModel.TimeoutInSec" Label="HTTP request time out in sec"></FluentNumberField>
-        <FluentTextField @bind-Value="esirConfigModel.apiKey" Label="Api ključ"></FluentTextField>
-        <FluentTextField @bind-Value="esirConfigModel.webserverAddress" Label="Web adresa EISR api-a"></FluentTextField>
-        <FluentNumberField  @bind-Value="esirConfigModel.pin" Label="Pin uređaja"></FluentNumberField>
+        <FluentTextField Style="width: 100%;" @bind-Value="esirConfigModel.apiKey" Label="Api ključ"></FluentTextField>
+        <FluentTextField Style="width: 100%;"  @bind-Value="esirConfigModel.webserverAddress" Label="Web adresa EISR api-a"></FluentTextField>
+        <FluentNumberField Style="width: 100%;" @bind-Value="esirConfigModel.pin" Label="Pin uređaja"></FluentNumberField>
         <FluentCheckbox @bind-Value="@prevoditeljSettingModel.Enabled" Label="Upaljen" />
 
         <br />

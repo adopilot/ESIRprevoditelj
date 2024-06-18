@@ -33,8 +33,8 @@ namespace FiskalniPrevoditelj.Servisi
 
             model.OperationMode = operatonModeEnum;
 
-            int toInt = 20;
-            int.TryParse((await SecureStorage.Default.GetAsync("TimeoutInSec") ?? "0"), out toInt);
+            int toInt = 3;
+            int.TryParse((await SecureStorage.Default.GetAsync("TimeoutInSec") ?? "3"), out toInt);
 
             model.TimeoutInSec = toInt;
 
