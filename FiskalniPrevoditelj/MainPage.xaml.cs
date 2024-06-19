@@ -1,4 +1,5 @@
-﻿using Microsoft.UI.Xaml.Controls;
+﻿using Microsoft.Maui.HotReload;
+using Microsoft.UI.Xaml.Controls;
 
 namespace FiskalniPrevoditelj
 {
@@ -8,11 +9,15 @@ namespace FiskalniPrevoditelj
         {
             InitializeComponent();
             Loaded += MainPage_Loaded;
-            
+           
         }
 
+
+
       
-            private async void MainPage_Loaded(object sender, EventArgs e)
+
+
+        private async void MainPage_Loaded(object sender, EventArgs e)
             {
 #if DEBUG
             Console.WriteLine("debug");

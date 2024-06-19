@@ -9,5 +9,9 @@ namespace FiskalniPrevoditelj.Servisi
     public class StateServis
     {
         public bool FirstRun { get; set; } = true;
+
+        public bool JesamliUpaljen { get; set; }
+
+        
     }
 }
