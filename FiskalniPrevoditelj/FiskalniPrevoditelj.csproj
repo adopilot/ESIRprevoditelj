@@ -77,4 +77,17 @@
       <ProjectReference Include="..\EsirDriver\EsirDriver.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="MauiContent\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <MauiXaml Update="NewPage1.xaml">
+        <Generator>MSBuild:Compile</Generator>
+      </MauiXaml>
+      <MauiXaml Update="PdfViewer.xaml">
+        <Generator>MSBuild:Compile</Generator>
+      </MauiXaml>
+    </ItemGroup>
+
 </Project>

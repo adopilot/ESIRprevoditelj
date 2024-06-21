@@ -4,5 +4,31 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:maui="using:Microsoft.Maui"
     xmlns:local="using:FiskalniPrevoditelj.WinUI">
+    <maui:MauiWinUIApplication.Resources>
+
+        <DataTemplate  x:Key="MauiAppTitleBarTemplate">
+            <Grid >
+
+                <Border
+
+                  Canvas.ZIndex="1"
+
+                  VerticalAlignment="Stretch"
+
+                  
+                  Margin="0,0,0,0">
+
+                    <TextBlock
+                      VerticalAlignment="Center"
+                      HorizontalAlignment="Center"
+
+                      Text="Fiskalni prevoditelj"
+
+                      FontWeight="Normal"/>
+
+                </Border>
+            </Grid>
+        </DataTemplate>
+    </maui:MauiWinUIApplication.Resources>
 
 </maui:MauiWinUIApplication>

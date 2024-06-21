@@ -19,7 +19,8 @@
     <FluentButton Appearance="Appearance.Stealth" OnClick="()=>_engin.Konfigurisi(esirConfigModel,prevoditeljSettingModel)">Rekonfiguriši</FluentButton>
     
     <FluentMenuButton @ref=menubutton Text=@($"Log level {@logLevel.ToString()}") Items="@logLevelItems" OnMenuChanged="HandleOnMenuChanged"></FluentMenuButton>
-    
+    <FluentButton Appearance="Appearance.Stealth" OnClick="()=>ZadnjiRacun()">Zadnji račun</FluentButton>
+
 </FluentToolbar>
 <FluentDataGrid Items="@data" @ref="gridPoruka">
     <PropertyColumn Property="@(p => p.Poruka)"  Sortable="true" />
@@ -33,20 +34,20 @@
     //private string verzija { get; set; } = "4.1.1";
 
     private Dictionary<string, string> logLevelItems;
-
     private EsirDriver.Modeli.EsirConfigModel esirConfigModel { get; set; } = new EsirDriver.Modeli.EsirConfigModel();
     private EsirDriver.Modeli.PrevoditeljSettingModel prevoditeljSettingModel { get; set; } = new EsirDriver.Modeli.PrevoditeljSettingModel();
     private LogLevel logLevel { get; set; } = LogLevel.Debug;
-
+    private Servisi.SlidingBuffer<PorukaFiskalnogPrintera> buferListe = new Servisi.SlidingBuffer<PorukaFiskalnogPrintera>(20);
     FluentDataGrid<PorukaFiskalnogPrintera> gridPoruka;
-    //private List<PorukaFiskalnogPrintera> poruke = new List<PorukaFiskalnogPrintera>() { new PorukaFiskalnogPrintera() { MozeNastaviti=true, LogLevel= LogLevel.Information, Poruka="Upalio sam se" } };
+
     public IQueryable<PorukaFiskalnogPrintera> data
     {
 
         get { return buferListe.Reverse().AsQueryable<PorukaFiskalnogPrintera>(); }
     }
 
-    private Servisi.SlidingBuffer<PorukaFiskalnogPrintera> buferListe = new Servisi.SlidingBuffer<PorukaFiskalnogPrintera>(20);
+
+
 
     private async Task UpdateMyApp()
     {
@@ -59,17 +60,17 @@
                 var mgr = new UpdateManager("https://driver.pf.robot.ba/");
 
 
-                
+
                 // check for new version
                 var newVersion = await mgr.CheckForUpdatesAsync();
                 if (newVersion == null)
                 {
-                    
+
                     return; // no update available
                 }
 
                 _toastService.ShowInfo($"Našli smo novu verziu app {(newVersion?.BaseRelease?.Version.Release ?? "x.x.x")} istu pokušavamo preuzeti");
-                
+
                 // download new version
                 await mgr.DownloadUpdatesAsync(newVersion);
 
@@ -88,17 +89,17 @@
     {
         try
         {
-            
-            _toastService.ShowInfo($"App upaljena sa verzijom 4.1.5 ");
+
+            _toastService.ShowInfo($"App upaljena sa verzijom 4.1.6 ");
             await UpdateMyApp();
             logLevelItems = GetLogLevels();
             _engin.MessageReceived += Servis_MessageReceived;
-            buferListe.Add(new PorukaFiskalnogPrintera(){ IsError=false, MozeNastaviti=true, LogLevel= LogLevel.Debug, Poruka=$"Upalio smo app na ver 4.1.5 "});
+            buferListe.Add(new PorukaFiskalnogPrintera(){ IsError=false, MozeNastaviti=true, LogLevel= LogLevel.Debug, Poruka=$"Upalio smo app na ver 4.1.6 "});
             esirConfigModel = await _configServis.GetEsirConfg();
             prevoditeljSettingModel = await _configServis.GetPrevoditeljConfg();
             await _engin.Konfigurisi(esirConfigModel, prevoditeljSettingModel);
 
-    }
+        }
         catch (Exception ex)
         {
             _toastService.ShowError($"Greška u inicijalizaiji sa ex:{ex.Message}");
@@ -116,14 +117,27 @@
         }
     }
 
+    private async Task ZadnjiRacun()
+    {
+        var racun = await _engin._esir.LastInvoice(EsirDriver.Modeli.esir.ReceiptLayoutType.Invoice, EsirDriver.Modeli.esir.ReceptImageFormat.Pdf, true);
 
-    string? comboboxValue;
-    FluentToolbar? Toolbar;
-    string? value1 = "one", value2 = "two", value3;
-    bool check1;
-    string? text1;
+        if (!(racun?.messages??"").Contains("Успешно"))
+        {
+            await _dialogService.ShowErrorAsync($"Nismo dobili zanji račun ESIRa sa porukamam {(racun?.messages ?? "")}");
+            return;
+        }
+        var secondWindow = new Window()
+            {
+                Page = new NewPage1(racun.invoiceImagePdfBase64)
+            };
 
-    int counter = 1;
+
+        Application.Current.OpenWindow(secondWindow);
+        
+        Console.WriteLine(racun?.tin??"tin");
+    }
+
+    
     private async void SpasiSettingsZaEnable(bool args)
     {
         prevoditeljSettingModel.Enabled = args;
@@ -162,12 +176,5 @@
     {
         
     }
-    private void Klik()
-    {
-        Random rnd = new();
-
-        var intent = Enum.GetValues<ToastIntent>()[rnd.Next(10)];
-        var message = $"Simple Toast #{counter++}";
-        _toastService.ShowToast(intent, message);
-    }
+    
 }

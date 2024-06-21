@@ -216,11 +216,12 @@ namespace EsirDriver
 
         }
 
-        public async Task<InvoiceResponseModel> LastInvoice(ReceiptLayoutType receiptLayoutType, ReceptImageFormat receptImageFormat, bool includeHeaderAndFooter)
+        public async Task<InvoiceResponseModel> LastInvoice(bool FromMemory , ReceiptLayoutType receiptLayoutType, ReceptImageFormat receptImageFormat, bool includeHeaderAndFooter)
         {
-            if (lastInvoiceResponseModel != null)
+            if (FromMemory && lastInvoiceResponseModel != null)
                 return lastInvoiceResponseModel;
-
+            else
+                lastInvoiceResponseModel = new InvoiceResponseModel();
 
             try
             {
@@ -239,6 +240,9 @@ namespace EsirDriver
                 var all = JsonSerializer.Deserialize<EsirInvoiceFromDbModel>(res,_jsonSerializerOptions);
 
                 lastInvoiceResponseModel = all.invoiceResponse;
+                lastInvoiceResponseModel.invoiceImagePdfBase64 = all.receiptImageBase64;
+                lastInvoiceResponseModel.invoiceImagePngBase64 = all.receiptImageBase64;
+                
                 return lastInvoiceResponseModel;
 
 

@@ -16,6 +16,7 @@ namespace FiskalniPrevoditelj.WinUI
         /// </summary>
         public App()
         {
+            
             this.InitializeComponent();
         }
 
