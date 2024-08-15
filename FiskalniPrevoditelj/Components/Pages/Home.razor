@@ -90,11 +90,11 @@
         try
         {
 
-            _toastService.ShowInfo($"App upaljena sa verzijom 4.1.6 ");
+            _toastService.ShowInfo($"App upaljena sa verzijom 4.1.7 ");
             await UpdateMyApp();
             logLevelItems = GetLogLevels();
             _engin.MessageReceived += Servis_MessageReceived;
-            buferListe.Add(new PorukaFiskalnogPrintera(){ IsError=false, MozeNastaviti=true, LogLevel= LogLevel.Debug, Poruka=$"Upalio smo app na ver 4.1.6 "});
+            buferListe.Add(new PorukaFiskalnogPrintera(){ IsError=false, MozeNastaviti=true, LogLevel= LogLevel.Debug, Poruka=$"Upalio smo app na ver 4.1.7 "});
             esirConfigModel = await _configServis.GetEsirConfg();
             prevoditeljSettingModel = await _configServis.GetPrevoditeljConfg();
             await _engin.Konfigurisi(esirConfigModel, prevoditeljSettingModel);
@@ -119,7 +119,7 @@
 
     private async Task ZadnjiRacun()
     {
-        var racun = await _engin._esir.LastInvoice(EsirDriver.Modeli.esir.ReceiptLayoutType.Invoice, EsirDriver.Modeli.esir.ReceptImageFormat.Pdf, true);
+        var racun = await _engin._esir.LastInvoice(false,EsirDriver.Modeli.esir.ReceiptLayoutType.Invoice, EsirDriver.Modeli.esir.ReceptImageFormat.Pdf, true);
 
         if (!(racun?.messages??"").Contains("Успешно"))
         {

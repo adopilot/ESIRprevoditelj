@@ -93,13 +93,34 @@ namespace FiskalniPrevoditelj
 
                             }
                             */
+                            /*Ovo radi samo je alter mi hocemo 
+                            appWindow.Closing += async (s, e) =>
+                            {
+
+                                App.Current.Dispatcher.Dispatch(async () => {
+                                    var ado = await App.Current.MainPage.DisplayAlert("Alert", "Are you sure you want to close the application.", "Da", "Ne");
+                                    if (ado)
+                                    {
+                                        App.Current?.CloseWindow(Application.Current.MainPage.Window);
+                                        App.Current?.Quit();
+
+                                    }
+                                });
+
+
+
+                                e.Cancel = true;
+                            };
+                            */
                             appWindow.Closing += async (s, e) =>
                             {
                                 
                                 App.Current.Dispatcher.Dispatch(async () =>
                                 {
+
+
                                     
-                                    var pitanje = await App.Current.MainPage.DisplayActionSheet("Zatvarate li apliakciju ?", null, null, "Da zatvaram", "Ne ostajem", "Samo je smanji minimiziraj");
+                                    var pitanje = await App.Current.MainPage.DisplayActionSheet("Zatvarate li apliakciju ?", "Odustani od zatvaranja", null, "Da zatvaram", "Ne ostajem", "Samo je smanji minimiziraj");
                                     switch (pitanje)
                                     {
                                         case "Ne ostajem":
@@ -115,7 +136,8 @@ namespace FiskalniPrevoditelj
                                             p.Minimize();
 
                                             break;
-                                        default:
+
+                                        case "Da zatvaram":
                                             for (int intCounter = App.Current.Windows.Count - 1; intCounter >= 0; intCounter--)
                                             {
                                                 App.Current?.CloseWindow(App.Current.Windows[intCounter]);
@@ -124,16 +146,20 @@ namespace FiskalniPrevoditelj
                                             App.Current?.CloseWindow(Application.Current.MainPage.Window);
                                             App.Current?.Quit();
                                             break;
+                                        default:
+                                            break;
+
                                     }
                                    
                                 }
                                  
                                 );
                                 e.Cancel = true;
+                                    
                             };
+                                    
 
-
-
+                            
                         };
                     });
                 });

@@ -698,7 +698,8 @@ namespace EsirDriver.Implmentacije
         {
             try
             {
-                var receptState = await _esir.LastInvoice(ReceiptLayoutType.Slip, ReceptImageFormat.Png, true);
+                //bool FromMemory , ReceiptLayoutType receiptLayoutType, ReceptImageFormat receptImageFormat, bool includeHeaderAndFooter
+                var receptState = await _esir.LastInvoice(true, ReceiptLayoutType.Slip, ReceptImageFormat.Png, true);
    
                 if (receptState==null)
                 {
