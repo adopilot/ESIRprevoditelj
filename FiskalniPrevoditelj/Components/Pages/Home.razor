@@ -89,12 +89,12 @@
     {
         try
         {
-
-            _toastService.ShowInfo($"App upaljena sa verzijom 4.1.7 ");
+            string verzija = "4.3.5";
+            _toastService.ShowInfo($"App upaljena sa verzijom {verzija} ");
             await UpdateMyApp();
             logLevelItems = GetLogLevels();
             _engin.MessageReceived += Servis_MessageReceived;
-            buferListe.Add(new PorukaFiskalnogPrintera(){ IsError=false, MozeNastaviti=true, LogLevel= LogLevel.Debug, Poruka=$"Upalio smo app na ver 4.1.7 "});
+            buferListe.Add(new PorukaFiskalnogPrintera(){ IsError=false, MozeNastaviti=true, LogLevel= LogLevel.Debug, Poruka=$"Upalio smo app na ver {verzija} "});
             esirConfigModel = await _configServis.GetEsirConfg();
             prevoditeljSettingModel = await _configServis.GetPrevoditeljConfg();
             await _engin.Konfigurisi(esirConfigModel, prevoditeljSettingModel);

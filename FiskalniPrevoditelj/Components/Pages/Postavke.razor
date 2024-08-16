@@ -25,10 +25,20 @@
     
     <br />
         <h3>Postavke fiskalnog printera</h3>
+        <FluentSelect Width="500px"
+                      Height="250px"
+                      TOption="string"
+                      Items="@operationModeItems"
+                      Label="Način rada"
+                      Multiple="false"
+                      @bind-Value="odabraniModelRada">
+        </FluentSelect>
         <FluentNumberField Step="1" Min="1"  @bind-Value="esirConfigModel.TimeoutInSec" Label="HTTP request time out in sec"></FluentNumberField>
         <FluentTextField Style="width: 100%;" @bind-Value="esirConfigModel.apiKey" Label="Api ključ"></FluentTextField>
         <FluentTextField Style="width: 100%;"  @bind-Value="esirConfigModel.webserverAddress" Label="Web adresa EISR api-a"></FluentTextField>
         <FluentNumberField Style="width: 100%;" @bind-Value="esirConfigModel.pin" Label="Pin uređaja"></FluentNumberField>
+        
+        <br />
         <FluentCheckbox @bind-Value="@prevoditeljSettingModel.Enabled" Label="Upaljen" />
         <br />
         <FluentCheckbox @bind-Value="IsStartupEnabled" Label="Pokreni aplikciju prilikom paljenja Windows OS-a" />
@@ -40,6 +50,9 @@
 
 @code {
 
+    private FluentMenuButton operationModeButton = new();
+    string odabraniModelRada;
+    private Dictionary<string, string> opreatinmModeTypes;
     private EsirDriver.Modeli.EsirConfigModel esirConfigModel { get; set; } = new EsirDriver.Modeli.EsirConfigModel();
     private EsirDriver.Modeli.PrevoditeljSettingModel prevoditeljSettingModel { get; set; } = new EsirDriver.Modeli.PrevoditeljSettingModel();
     //private Modeli.AppPostavkeModel appPostavke { get; set; } = new Modeli.AppPostavkeModel();
@@ -56,6 +69,16 @@
             }
         }
     }
+    private List<string> operationModeItems = new List<string>()
+    {
+        EsirDriver.Modeli.esir.InvoiceType.Normal.ToString(),
+        EsirDriver.Modeli.esir.InvoiceType.Advance.ToString(),
+        EsirDriver.Modeli.esir.InvoiceType.Copy.ToString(),
+        EsirDriver.Modeli.esir.InvoiceType.Proforma.ToString(),
+        EsirDriver.Modeli.esir.InvoiceType.Training.ToString()
+    };
+
+
     private void UpdateStartupSetting()
     {
         if (isStartupEnabled)
@@ -75,6 +98,9 @@
             isStartupEnabled = _startupServis.IsApplicationInStartup();
             esirConfigModel = await _configServis.GetEsirConfg();
             prevoditeljSettingModel = await _configServis.GetPrevoditeljConfg();
+
+            odabraniModelRada = esirConfigModel.OperationMode.ToString();
+
             //appPostavke = await _configServis.GetAppConfig();
             var exe = _startupServis.GetExecutablePath();
             Console.WriteLine(exe);
@@ -88,17 +114,22 @@
     }
 
 
+
+
     async private void onClick()
     {
-       
-       
+
+
 
 
 
         try
         {
+            EsirDriver.Modeli.esir.InvoiceType invoiceType = EsirDriver.Modeli.esir.InvoiceType.Normal;
 
+            Enum.TryParse(odabraniModelRada, true, out invoiceType);
 
+            esirConfigModel.OperationMode = invoiceType;
 
 
             var configEsirSave = await _configServis.SetEsirConfg(esirConfigModel);

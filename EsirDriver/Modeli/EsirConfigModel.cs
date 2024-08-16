@@ -18,6 +18,8 @@ namespace EsirDriver.Modeli
         public int TimeoutInSec { get; set; } = 3;
 
         public InvoiceType OperationMode { get; set; } = InvoiceType.Training;
+
+        
         
 
 

@@ -24,14 +24,14 @@ public partial class NewPage1 : ContentPage
         
 
         // Decode the base64 string to get the PDF content
-        byte[] pdfBytes = Convert.FromBase64String(base64String);
+      //  byte[] pdfBytes = Convert.FromBase64String(base64String);
 
         // Define the local file path to save the PDF
         string fileName = "sample.pdf";
         string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), fileName);
 
         // Write the PDF bytes to the local file
-        File.WriteAllBytes(filePath, pdfBytes);
+       // File.WriteAllBytes(filePath, pdfBytes);
 
         // Set the local file path as the source for UrlWebViewSource
         var urlWebViewSource = new UrlWebViewSource
