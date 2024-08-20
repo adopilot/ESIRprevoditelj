@@ -19,7 +19,7 @@ namespace FiskalniPrevoditelj
 
         private async void MainPage_Loaded(object sender, EventArgs e)
             {
-            
+            /*
             var webView2 = (this.blazorWebView.Handler.PlatformView as WebView2);
             await webView2.EnsureCoreWebView2Async();
             var settings = webView2.CoreWebView2.Settings;
@@ -32,7 +32,7 @@ namespace FiskalniPrevoditelj
             var userAgent = settings.UserAgent;
             settings.AreBrowserAcceleratorKeysEnabled = false;
             
-
+            */
 
 
         }

@@ -453,12 +453,12 @@ namespace EsirDriver
 
                 var content = new StringContent(json, null, "application/json");
                 request.Content = content;
-
+                
                 if (!string.IsNullOrEmpty(requestId))
                 {
                     request.Headers.Add("RequestId", requestId);
                 }
-
+                
                 var response = await _httpClient.SendAsync(request);
 
                 string res = await response.Content.ReadAsStringAsync();

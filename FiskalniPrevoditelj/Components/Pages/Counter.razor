@@ -1,16 +1,26 @@
 ﻿@page "/counter"
+@using FiskalniPrevoditelj.Servisi
+@inject IPrinterService printService;
 
 <h1>Counter</h1>
 
 <p role="status">Current count: @currentCount</p>
 
 <button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
-<br />
-<button class="btn btn-primary" @onclick="OnOpenWindowClicked">Open second window</button>
+<hr />
+<FluentNumberField @bind-Value="scale" Label="Scale" />
+<hr />
+<FluentTextArea @bind-Value="base64Image" Label="With label:" />
+
+<hr />
+<button class="btn btn-primary" @onclick="printPdf">Print pdf</button>
+<hr />
 
 @code {
     private int currentCount = 0;
 
+    private string base64Image { get; set; }
+    private float scale { get; set; }
     private void IncrementCount()
     {
         currentCount++;
@@ -24,5 +34,9 @@
 
 
         Application.Current.OpenWindow(secondWindow);
+    }
+    private void printPdf()
+    {
+        printService.PrintBase64Image(base64Image, "Star TSP100 Cutter (TSP143)",scale);
     }
 }

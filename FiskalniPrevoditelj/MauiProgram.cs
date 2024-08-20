@@ -12,6 +12,7 @@ using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using Velopack;
 
+
 namespace FiskalniPrevoditelj
 {
     public static class MauiProgram
@@ -61,8 +62,8 @@ namespace FiskalniPrevoditelj
             builder.Services.AddSingleton<Servisi.ConfigSaveServis>();
             builder.Services.AddSingleton<StateServis>(stateServis);
             builder.Services.AddSingleton<StartupServis>();
-            
-            
+
+            builder.Services.AddSingleton<IPrinterService, PrintService>();
             VelopackApp.Build().Run();
 
 #if WINDOWS

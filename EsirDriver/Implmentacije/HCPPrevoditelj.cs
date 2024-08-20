@@ -466,6 +466,7 @@ namespace EsirDriver.Implmentacije
                 {
                     var uid = _esir.GetEsirUid();
                     invoiceRequest.transactionType = TranscationType.Refund;
+                    
                     invoiceRequest.referentDocumentDT = DateTime.Today;
                     invoiceRequest.referentDocumentNumber = $"{(string)_refundSet.Clone()}";
                     _refundSet = string.Empty;
