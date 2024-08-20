@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace EsirDriver.Modeli
 {
+
+    [RequiresUnreferencedCode("Necessary because of RangeAttribute usage")]
     public class PrevoditeljSettingModel
     {
         
@@ -16,6 +20,9 @@ namespace EsirDriver.Modeli
         public bool AutomaticallyCloseRecept { get; set; } = true;
         public string EncodingName { get; set; } = "windows-1250";
         public PrevodimoKomandePrintera KomandePrintera { get; set; }= PrevodimoKomandePrintera.HcpFBiH;
+        [Required(ErrorMessage = "Poreska stopa je obavzna")]
+        [MinLength(1, ErrorMessage = "Samoj jedna poreska stopa je dozvoljnja")]
+        [StringLength(1, ErrorMessage = "Samo jedna poreka stopa je dozvoljena ")]
         public string PodrazumjevanaPoreskaStopa { get; set; } = "F";
         public string DefSklSifra { get; set; } = "000";
     }

@@ -87,7 +87,7 @@ namespace FiskalniPrevoditelj.Servisi
             }
             catch (Exception ex)
             {
-                return new Modeli.PocoMsg() { Msg = $"Greška u spašavnju congiga {ex.Message}" };
+                return new Modeli.PocoMsg() { Msg = $"Greška u spašavnju configa {ex.Message}" };
             }
 
 

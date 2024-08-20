@@ -19,8 +19,9 @@
     <FluentButton Appearance="Appearance.Stealth" OnClick="()=>_engin.Konfigurisi(esirConfigModel,prevoditeljSettingModel)">Rekonfiguriši</FluentButton>
     
     <FluentMenuButton @ref=menubutton Text=@($"Log level {@logLevel.ToString()}") Items="@logLevelItems" OnMenuChanged="HandleOnMenuChanged"></FluentMenuButton>
+    @*
     <FluentButton Appearance="Appearance.Stealth" OnClick="()=>ZadnjiRacun()">Zadnji račun</FluentButton>
-
+    *@
 </FluentToolbar>
 <FluentDataGrid Items="@data" @ref="gridPoruka">
     <PropertyColumn Property="@(p => p.Poruka)"  Sortable="true" />
@@ -89,7 +90,7 @@
     {
         try
         {
-            string verzija = "4.3.5";
+            string verzija = "4.3.8";
             _toastService.ShowInfo($"App upaljena sa verzijom {verzija} ");
             await UpdateMyApp();
             logLevelItems = GetLogLevels();

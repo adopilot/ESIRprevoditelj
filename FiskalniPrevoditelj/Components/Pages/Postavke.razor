@@ -10,17 +10,30 @@
 @inject IDialogService _dialogService;
 @inject Servisi.StartupServis _startupServis;
 
+<EditForm Model="configModel" OnValidSubmit="@HandleValidSubmit" FormName="starship_fluent_entry" style="margin:2px;" novalidate>
+    <DataAnnotationsValidator />
 <FluentToolbar id="toolbar-fluent-components">
-    <FluentButton OnClick="@onClick" Appearance="Appearance.Accent">Spasi postavke</FluentButton>
+    <FluentButton  Type="ButtonType.Submit" Appearance="Appearance.Accent">Spasi postavke</FluentButton>
+        <FluentValidationSummary />
 </FluentToolbar>
 <FluentStack Orientation="Orientation.Horizontal" Width="100%" HorizontalAlignment="HorizontalAlignment.Center">
+        
+        
 <FluentBodyContent >
         <h3>Postavke prevoditalja</h3>
-        <FluentTextField Style="width: 100%;" @bind-Value="prevoditeljSettingModel.PathInputFiles" Label="Čitamo HCP datoeke iz folrear (to_fp)"></FluentTextField>
-        <FluentTextField Style="width: 100%;" @bind-Value="prevoditeljSettingModel.PathOutputFiles" Label="Odgovaramo HCP datoeke u folder (from_fp)"></FluentTextField>
-        <FluentNumberField Style="width: 100%;" @bind-Value="prevoditeljSettingModel.ReadFolderEvryMiliSec" Min="100" Label="Čitaj folder svakih milisekunid "></FluentNumberField>
-        <FluentTextField Style="width: 100%;" @bind-Value="prevoditeljSettingModel.DefSklSifra" Label=" Podrazumjevana šifrra skaldišat"></FluentTextField>
-        
+            <FluentTextField Style="width: 100%;" @bind-Value="configModel.PrevoditeljSettingModel.PathInputFiles" Label="Čitamo HCP datoeke iz folrear (to_fp)"></FluentTextField>
+            <FluentTextField Style="width: 100%;" @bind-Value="configModel.PrevoditeljSettingModel.PathOutputFiles" Label="Odgovaramo HCP datoeke u folder (from_fp)"></FluentTextField>
+            <FluentNumberField Style="width: 100%;" @bind-Value="configModel.PrevoditeljSettingModel.ReadFolderEvryMiliSec" Min="100" Label="Čitaj folder svakih milisekunid "></FluentNumberField>
+            <FluentTextField Style="width: 100%;" @bind-Value="configModel.PrevoditeljSettingModel.DefSklSifra" Label=" Podrazumjevana šifrra skaldišat"></FluentTextField>
+        <div>
+                <FluentTextField @bind-Value="configModel.PrevoditeljSettingModel.PodrazumjevanaPoreskaStopa" Maxlength="10" Minlength="0"
+                         Placeholder="Podrazumjevana poreska stopa" 
+                         Label="Poreska stopa u upotrebi" 
+                         Required="true">
+            <FluentIcon Value="@(new Icons.Regular.Size20.DocumentPercent())" Color="@Color.Neutral" Slot="start" />
+        </FluentTextField>
+                <FluentValidationMessage For="@(() => configModel.PrevoditeljSettingModel.PodrazumjevanaPoreskaStopa)" />
+        </div>
         <FluentDivider Style="width:100%;" Role="DividerRole.Presentation"></FluentDivider>
     
     <br />
@@ -33,28 +46,35 @@
                       Multiple="false"
                       @bind-Value="odabraniModelRada">
         </FluentSelect>
-        <FluentNumberField Step="1" Min="1"  @bind-Value="esirConfigModel.TimeoutInSec" Label="HTTP request time out in sec"></FluentNumberField>
-        <FluentTextField Style="width: 100%;" @bind-Value="esirConfigModel.apiKey" Label="Api ključ"></FluentTextField>
-        <FluentTextField Style="width: 100%;"  @bind-Value="esirConfigModel.webserverAddress" Label="Web adresa EISR api-a"></FluentTextField>
-        <FluentNumberField Style="width: 100%;" @bind-Value="esirConfigModel.pin" Label="Pin uređaja"></FluentNumberField>
+            <FluentNumberField Step="1" Min="1" @bind-Value="configModel.EsirConfigModel.TimeoutInSec" Label="HTTP request time out in sec"></FluentNumberField>
+            <FluentTextField Style="width: 100%;" @bind-Value="configModel.EsirConfigModel.apiKey" Label="Api ključ"></FluentTextField>
+            <FluentTextField Style="width: 100%;" @bind-Value="configModel.EsirConfigModel.webserverAddress" Label="Web adresa EISR api-a"></FluentTextField>
+            <FluentNumberField Style="width: 100%;" @bind-Value="configModel.EsirConfigModel.pin" Label="Pin uređaja"></FluentNumberField>
         
         <br />
-        <FluentCheckbox @bind-Value="@prevoditeljSettingModel.Enabled" Label="Upaljen" />
+            <FluentCheckbox @bind-Value="@configModel.PrevoditeljSettingModel.Enabled" Label="Upaljen" />
         <br />
         <FluentCheckbox @bind-Value="IsStartupEnabled" Label="Pokreni aplikciju prilikom paljenja Windows OS-a" />
         <br />
         
     </FluentBodyContent>
 </FluentStack>
-
+</EditForm>
 
 @code {
 
     private FluentMenuButton operationModeButton = new();
     string odabraniModelRada;
     private Dictionary<string, string> opreatinmModeTypes;
-    private EsirDriver.Modeli.EsirConfigModel esirConfigModel { get; set; } = new EsirDriver.Modeli.EsirConfigModel();
-    private EsirDriver.Modeli.PrevoditeljSettingModel prevoditeljSettingModel { get; set; } = new EsirDriver.Modeli.PrevoditeljSettingModel();
+
+
+
+    EsirDriver.Modeli.ConfigModel configModel =
+    new EsirDriver.Modeli.ConfigModel() { EsirConfigModel = new EsirDriver.Modeli.EsirConfigModel(), PrevoditeljSettingModel = new EsirDriver.Modeli.PrevoditeljSettingModel()
+};
+    //private EsirDriver.Modeli.EsirConfigModel esirConfigModel { get; set; } = new EsirDriver.Modeli.EsirConfigModel();
+    //private EsirDriver.Modeli.PrevoditeljSettingModel prevoditeljSettingModel { get; set; } = new EsirDriver.Modeli.PrevoditeljSettingModel();
+
     //private Modeli.AppPostavkeModel appPostavke { get; set; } = new Modeli.AppPostavkeModel();
     private bool isStartupEnabled;
     private bool IsStartupEnabled
@@ -79,6 +99,7 @@
     };
 
 
+
     private void UpdateStartupSetting()
     {
         if (isStartupEnabled)
@@ -95,11 +116,12 @@
     {
         try
         {
-            isStartupEnabled = _startupServis.IsApplicationInStartup();
-            esirConfigModel = await _configServis.GetEsirConfg();
-            prevoditeljSettingModel = await _configServis.GetPrevoditeljConfg();
 
-            odabraniModelRada = esirConfigModel.OperationMode.ToString();
+            isStartupEnabled = _startupServis.IsApplicationInStartup();
+            configModel.EsirConfigModel = await _configServis.GetEsirConfg();
+            configModel.PrevoditeljSettingModel = await _configServis.GetPrevoditeljConfg();
+
+            odabraniModelRada = configModel.EsirConfigModel.OperationMode.ToString();
 
             //appPostavke = await _configServis.GetAppConfig();
             var exe = _startupServis.GetExecutablePath();
@@ -114,14 +136,8 @@
     }
 
 
-
-
-    async private void onClick()
+    private async void HandleValidSubmit()
     {
-
-
-
-
 
         try
         {
@@ -129,21 +145,28 @@
 
             Enum.TryParse(odabraniModelRada, true, out invoiceType);
 
-            esirConfigModel.OperationMode = invoiceType;
+            configModel.EsirConfigModel.OperationMode = invoiceType;
 
 
-            var configEsirSave = await _configServis.SetEsirConfg(esirConfigModel);
+            var configEsirSave = await _configServis.SetEsirConfg(configModel.EsirConfigModel);
             _toastService.ShowToast(configEsirSave.Valid ? ToastIntent.Success : ToastIntent.Error, configEsirSave.Msg);
 
-            var configPrevoditeljSave = await _configServis.SetPrevoditeljConfg(prevoditeljSettingModel);
+            var configPrevoditeljSave = await _configServis.SetPrevoditeljConfg(configModel.PrevoditeljSettingModel);
+
+
             _toastService.ShowToast(configPrevoditeljSave.Valid ? ToastIntent.Success : ToastIntent.Error, configPrevoditeljSave.Msg);
+            
+            if (!configPrevoditeljSave.Valid || !configEsirSave.Valid)
+                {
+                    return;
+                }
 
             //var configAppSave = await _configServis.SetAppConfig(appPostavke);
             //_toastService.ShowToast(configAppSave.Valid ? ToastIntent.Success : ToastIntent.Error, configAppSave.Msg);
 
 
-            var configSaveMsg = await _engin.Konfigurisi(esirConfigModel, prevoditeljSettingModel);
-            if (configSaveMsg.LogLevel >= EsirDriver.Modeli.LogLevel.Warning)
+            var configSaveMsg = await _engin.Konfigurisi(configModel.EsirConfigModel, configModel.PrevoditeljSettingModel);
+            if (configSaveMsg.IsError || !configSaveMsg.MozeNastaviti)
             {
                 await _dialogService.ShowWarningAsync(configSaveMsg.Poruka, "Proglem prilikom konfiguracije");
 
@@ -163,6 +186,8 @@
             var message = $"Greška u spašavaanju postavki ex:{ex.Message}";
             _toastService.ShowToast(ToastIntent.Error, message);
         }
-      
+
+
+
     }
     }
