@@ -8,9 +8,9 @@ namespace FiskalniPrevoditelj.Modeli
 {
     public class AppPostavkeModel
     {
+        
         public bool RunAppOnWindowsStartUp { get; set; }
 
-        public string PosPrinter { get; set; }
         
     }
 }

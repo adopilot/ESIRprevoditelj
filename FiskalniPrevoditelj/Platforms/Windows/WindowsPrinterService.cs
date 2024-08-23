@@ -47,7 +47,8 @@ namespace FiskalniPrevoditelj.Platforms.Windows
         }
         public void PrintBase64Image(string base64,string printerName,string paperSize)
         {
-            float paperWidthInches = 1.4f;//  10 / 25.4f; // 1 inch = 25.4 mm
+            // Convert the desired paper width (80mm) to inches
+            float paperWidthInches = 1f; // 1 inch = 25.4 mm
 
             byte[] imageBytes = Convert.FromBase64String(base64);
 
@@ -62,6 +63,7 @@ namespace FiskalniPrevoditelj.Platforms.Windows
                     {
                         // Get the DPI (dots per inch) of the printer
                         float dpiX = e.Graphics.DpiX;
+                        float dpiY = e.Graphics.DpiY;
 
                         // Calculate the width in pixels for 80mm
                         int widthInPixels = (int)(paperWidthInches * dpiX);
@@ -70,12 +72,22 @@ namespace FiskalniPrevoditelj.Platforms.Windows
                         float aspectRatio = (float)image.Height / image.Width;
                         int heightInPixels = (int)(widthInPixels * aspectRatio);
 
+                        // Get the available page height (defaulting to A4 size if not specified)
+                        int pageHeightInPixels = e.PageBounds.Height;
+
+                        // Adjust the height if the image height exceeds the page height
+                        if (heightInPixels > pageHeightInPixels)
+                        {
+                            heightInPixels = pageHeightInPixels;
+                        }
+
                         // Create a rectangle with the calculated dimensions
                         var rect = new Rectangle(0, 0, widthInPixels, heightInPixels);
 
                         // Draw the image at the specified location and size
                         e.Graphics.DrawImage(image, rect);
 
+                        // Set this flag to false since we are printing only one page
                         e.HasMorePages = false;
                     };
 
