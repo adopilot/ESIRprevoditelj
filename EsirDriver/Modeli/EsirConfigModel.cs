@@ -21,10 +21,6 @@ namespace EsirDriver.Modeli
 
         public InvoiceType OperationMode { get; set; } = InvoiceType.Training;
 
-        
-        
-
-
 
     }
 

@@ -8,6 +8,14 @@ namespace FiskalniPrevoditelj.Servisi
 {
     public interface IPrinterService
     {
-        public void PrintBase64Image(string filePath,string printerName,float scale);
+        Task PrintPdfAsync(string filePath, string _printerName);
+
+
+        void PrintBase64Image(string base64, string printerName, string paperSize);
+        List<string> ListPirnters();
+
+        List<string> PaperSizes(string printerName);
+
+
     }
 }

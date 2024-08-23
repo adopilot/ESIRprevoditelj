@@ -4,6 +4,31 @@
 
 <h1>Counter</h1>
 
+
+<FluentSelect TOption="string"
+              Label="Select a person"
+              Items="@printeri"
+              Id="people-listbox"
+              Width="600px"
+              Height="250px"
+              Placeholder="Make a selection..."
+              @bind-Value="@odabraniPrinter"
+              @bind-SelectedOption="@odabraniPrinter" />
+
+<FluentSelect TOption="string"
+              Label="Select a person"
+              Items="@printService.PaperSizes(odabraniPrinter)"
+              Id="people-listbox"
+              Width="600px"
+              Height="250px"
+              Placeholder="Make a selection..."
+              @bind-Value="@odabraniPaperSize"
+              @bind-SelectedOption="@odabraniPaperSize" />
+<p>
+    Odabrani printer @odabraniPrinter <br />
+    Odabrani paper size @odabraniPaperSize
+</p>
+
 <p role="status">Current count: @currentCount</p>
 
 <button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
@@ -21,6 +46,16 @@
 
     private string base64Image { get; set; }
     private float scale { get; set; }
+
+    private List<string> printeri { get; set; }
+    private string odabraniPrinter { get; set; }
+    private string odabraniPaperSize { get; set; }
+
+    protected override void OnInitialized()
+    {
+        printeri = printService.ListPirnters();
+    }
+
     private void IncrementCount()
     {
         currentCount++;
@@ -37,6 +72,6 @@
     }
     private void printPdf()
     {
-        printService.PrintBase64Image(base64Image, "Star TSP100 Cutter (TSP143)",scale);
+        printService.PrintBase64Image(base64Image, odabraniPrinter, odabraniPaperSize);
     }
 }

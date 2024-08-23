@@ -11,6 +11,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using Velopack;
+using FiskalniPrevoditelj.Platforms.Windows;
 
 
 namespace FiskalniPrevoditelj
@@ -63,7 +64,7 @@ namespace FiskalniPrevoditelj
             builder.Services.AddSingleton<StateServis>(stateServis);
             builder.Services.AddSingleton<StartupServis>();
 
-            builder.Services.AddSingleton<IPrinterService, PrintService>();
+            builder.Services.AddSingleton<IPrinterService, WindowsPrinterService>();
             VelopackApp.Build().Run();
 
 #if WINDOWS

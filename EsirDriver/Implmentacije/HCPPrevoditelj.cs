@@ -440,7 +440,8 @@ namespace EsirDriver.Implmentacije
                     //Ovo može a i ne mora kod nas nema smisla jer je ovo id kojeg niko neće vidjeti:
                     //gtin = (red?.Brc??"0").PadLeft(13,'0'),
 
-                    invoiceRequest.items.Add(new ItemModel() { discount = 0, discountAmount = 0,  labels = new List<string>() { _prevoditeljSettingModel.PodrazumjevanaPoreskaStopa }, name=red.Dsc, quantity=red.Amn, unitPrice=red.Prc , totalAmount= red.Prc*red.Amn } );
+                    invoiceRequest.items.Add(new ItemModel() { discount = 0, discountAmount = 0,  labels = new List<string>() { _prevoditeljSettingModel.PodrazumjevanaPoreskaStopa }, name=red.Dsc, quantity=red.Amn, unitPrice=red.Prc 
+                        , totalAmount= Math.Round(red.Prc*red.Amn,2) } );
                 }
                 foreach (var red in payStavke)
                 {

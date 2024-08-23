@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace EsirDriver.Modeli.esir
 {
+    
     public enum InvoiceType
     {
         Normal, Proforma, Copy, Training, Advance

@@ -36,7 +36,8 @@ namespace EsirDriver
             {
                 new JsonStringEnumConverter(),
                 new DecimalRoundingConverter(),
-                new DecimalNullRoundingConverter()
+                new DecimalNullRoundingConverter(),
+                new CyrillicStringConverter()
             }
             };
 
@@ -127,7 +128,7 @@ namespace EsirDriver
                     return new EsirStatusCodeModel() { Code = code, Info = "Neispravne poreske oznake", Opis = "Poreske oznake poslane od strane POS-a nisu definisane", LogLevel = LogLevel.Error };
                 case 2400:
                     return new EsirStatusCodeModel() { Code = code, Info = "Nije konfigurisano", Opis = "SDC uređaj nije potpuno konfigurisan za potpisivanje fakture (npr. nedostaju stope poreza ili URL za verifikaciju itd.)", LogLevel = LogLevel.Error };
-                case 2800:
+                case 2800 :
                     return new EsirStatusCodeModel() { Code = code, Info = "Polje je obavezno", Opis = "Polje je obavezno (nedostaje obavezno polje zahtjeva za fakturu)", LogLevel = LogLevel.Error };
                 case 2801:
                     return new EsirStatusCodeModel() { Code = code, Info = "Vrijednost polja je preduga", Opis = "Dužina vrijednosti polja je duža od očekivane", LogLevel = LogLevel.Error };
@@ -429,12 +430,16 @@ namespace EsirDriver
                     throw new Exception("Fiskalni printer nije konfigursan");
                 }
 
-                var payment = invoiceRequestModel.invoiceRequest.payment.Sum(x=>x.amount);
-                var total = invoiceRequestModel.invoiceRequest.items.Sum(x=>x.totalAmount);
+                var payment = invoiceRequestModel.invoiceRequest.payment?.Sum(x=>x.amount)??0;
+                var total = invoiceRequestModel.invoiceRequest.items?.Sum(x=>x.totalAmount)??0;
 
-                if (total > payment)
+                
+
+                if (Math.Round(total,2) != Math.Round(payment,2))
                 {
-                    invoiceRequestModel.invoiceRequest.payment.Add(new PaymentModel() { paymentType= PaymentTypes.Cash, amount= total- payment });
+                    //invoiceRequestModel.invoiceRequest.payment.Add(new PaymentModel() { paymentType= PaymentTypes.Cash, amount= total- payment });
+                    invoiceRequestModel.invoiceRequest?.payment?.Clear();
+                    invoiceRequestModel.invoiceRequest.payment.Add(new PaymentModel() { paymentType = PaymentTypes.Cash, amount = Math.Round(total,2) });
                 }
 
                 invoiceRequestModel.invoiceRequest.invoiceType = _esirConfig.OperationMode;

@@ -7,7 +7,10 @@ using System.Threading.Tasks;
 using Windows.Graphics.Printing;
 using Microsoft.Maui.Controls.PlatformConfiguration.WindowsSpecific;
 using System.Drawing.Printing;
-
+using Microsoft.FluentUI.AspNetCore.Components;
+using System.Drawing;
+using System.Drawing.Printing;
+using Image = System.Drawing.Image;
 
 namespace FiskalniPrevoditelj.Platforms.Windows
 {
@@ -16,6 +19,72 @@ namespace FiskalniPrevoditelj.Platforms.Windows
         private string _filePath;
         private string _printerName;
 
+
+        public List<string> PaperSizes(string printerName)
+        {
+            List<string> sizes = new List<string>();
+            if (string.IsNullOrEmpty(printerName) ) 
+                return sizes;
+
+            PrintDocument printDoc = new PrintDocument();
+            printDoc.PrinterSettings.PrinterName = _printerName;
+            var printerSettings = printDoc.PrinterSettings;
+            foreach (var paperSize in printerSettings.PaperSizes)
+            {
+                sizes.Add(paperSize.ToString());
+            }
+            return sizes;
+
+        }
+        public List<string> ListPirnters()
+        {
+            List<string> pritners = new List<string>();
+            foreach (string printer in System.Drawing.Printing.PrinterSettings.InstalledPrinters)
+            {
+                pritners.Add(printer);
+            }
+            return pritners;
+        }
+        public void PrintBase64Image(string base64,string printerName,string paperSize)
+        {
+            float paperWidthInches = 1.4f;//  10 / 25.4f; // 1 inch = 25.4 mm
+
+            byte[] imageBytes = Convert.FromBase64String(base64);
+
+            PrintDocument printDoc = new PrintDocument();
+            printDoc.PrinterSettings.PrinterName = printerName;
+
+            using (var ms = new MemoryStream(imageBytes))
+            {
+                using (Image image = Image.FromStream(ms))
+                {
+                    printDoc.PrintPage += (sender, e) =>
+                    {
+                        // Get the DPI (dots per inch) of the printer
+                        float dpiX = e.Graphics.DpiX;
+
+                        // Calculate the width in pixels for 80mm
+                        int widthInPixels = (int)(paperWidthInches * dpiX);
+
+                        // Calculate the height in pixels to maintain the aspect ratio
+                        float aspectRatio = (float)image.Height / image.Width;
+                        int heightInPixels = (int)(widthInPixels * aspectRatio);
+
+                        // Create a rectangle with the calculated dimensions
+                        var rect = new Rectangle(0, 0, widthInPixels, heightInPixels);
+
+                        // Draw the image at the specified location and size
+                        e.Graphics.DrawImage(image, rect);
+
+                        e.HasMorePages = false;
+                    };
+
+                    // Trigger the printing process
+                    printDoc.Print();
+                }
+            }
+
+        }
         public Task PrintPdfAsync(string filePath, string _printerName)
         {
             _filePath = filePath;
@@ -35,19 +104,14 @@ namespace FiskalniPrevoditelj.Platforms.Windows
 
 
             // Show print dialog (optional)
-            PrintDialog printDialog = new PrintDialog();
-            printDialog.Document = printDoc;
-            if (printDialog.ShowDialog() == DialogResult.OK)
-            {
-                printDoc.Print();
-            }
+            
 
             // Print directly without showing the print dialog
             printDoc.Print();
 
             return Task.CompletedTask;
         }
-
+      
         private void OnPrintPage(object sender, PrintPageEventArgs e)
         {
             // Load and print the PDF page

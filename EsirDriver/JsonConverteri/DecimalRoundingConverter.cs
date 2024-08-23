@@ -23,7 +23,7 @@ namespace EsirDriver.JsonConverteri
         {
             if (value.HasValue)
             {
-                writer.WriteNumberValue(Math.Round(value.Value, 2, MidpointRounding.AwayFromZero));
+                writer.WriteNumberValue(Math.Round(value.Value, 2));
             }
             else
             {
@@ -40,7 +40,7 @@ namespace EsirDriver.JsonConverteri
 
         public override void Write(Utf8JsonWriter writer, decimal value, JsonSerializerOptions options)
         {
-            writer.WriteNumberValue(Math.Round(value, 2, MidpointRounding.AwayFromZero));
+            writer.WriteNumberValue(Math.Round(value, 2  ));
         }
     }
 }
