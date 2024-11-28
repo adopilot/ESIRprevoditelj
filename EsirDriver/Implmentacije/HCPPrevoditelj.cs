@@ -11,6 +11,7 @@ using System.Globalization;
 using EsirDriver.Modeli.esir;
 
 using System.Xml.Serialization;
+using System.Xml.Linq;
 
 namespace EsirDriver.Implmentacije
 {
@@ -138,6 +139,34 @@ namespace EsirDriver.Implmentacije
             return new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Trace, MozeNastaviti = true, Poruka = "Odradio sam klik sata" };
         }
 
+        private async Task<PorukaFiskalnogPrintera> OdradiCashIn(string value)
+        {
+            try
+            {
+
+                NumberStyles numberStyles = NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite;
+
+                string prcS = (value ?? "0").Replace(",", ".");
+                decimal prc = 0;
+
+                decimal.TryParse(prcS, numberStyles, CultureInfo.InvariantCulture, out prc);
+
+                if (prc == 0)
+                    return new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = true, LogLevel = LogLevel.Error, Poruka = $"Iznos mora biti veći od nula {value}" };
+
+                return await _esir.UnosGotovine(prc);
+
+            }
+            catch (Exception ex)
+            {
+                return new PorukaFiskalnogPrintera() { IsError = true, LogLevel = LogLevel.Error, MozeNastaviti = true, Poruka = $"Nismo unjeli gotvinu sa greškom {ex.Message}" };
+            }
+
+            
+
+        }
+       
+
         private async Task<PorukaFiskalnogPrintera> OdradiCmdDatoteku(string fileFullPath)
         {
             string xmlContent;
@@ -167,11 +196,55 @@ namespace EsirDriver.Implmentacije
                     value = node?.Attributes?["VALUE"]?.Value?? string.Empty;
                 }
             }
-            
+
             switch (cmdTxt)
             {
-                //Za ovo čekamo potvrdu upraljvanja novcem
+                case "X_REPORT":
+                    var xReporstSts = await _esir.PresjekStanjaPrint();
+                    await OdgovoriIObrisi(fileFullPath, xReporstSts.IsError, xReporstSts.Poruka);
+                    break;
                 case "CASH_IN":
+                    var stsGotIn = await OdradiCashIn(value);
+                    await OdgovoriIObrisi(fileFullPath, stsGotIn.IsError, stsGotIn.Poruka);
+                    break;
+                case "Z_REPORT":
+                    var xReporstStsb = await _esir.PresjekStanjaPrint();
+
+                    if (xReporstStsb.IsError)
+                    {
+                        await OdgovoriIObrisi(fileFullPath, xReporstStsb.IsError, xReporstStsb.Poruka);
+                        break;
+                    }
+
+                    var statusZstate = await _esir.DnevniIzvjestaj();
+                    if (statusZstate.IsError)
+                    {
+                        await OdgovoriIObrisi(fileFullPath, statusZstate.IsError, $"Greška kod pravljenja DIB-a {statusZstate.Poruka}");
+                        break;
+                    }
+                    try
+                    {
+                        var preskeStanja = await _esir.PresjekStanja();
+                        if ((preskeStanja?.totalCash ?? 0) > 0)
+                        {
+                            var podigniGotvinu = await _esir.PodizanjeGotovine(preskeStanja.totalCash);
+                            await OdgovoriIObrisi(fileFullPath, podigniGotvinu.IsError, $"Nismo podgili gotvinu sa porukom {podigniGotvinu.Poruka}");
+                        }
+                        else
+                        {
+                            await OdgovoriIObrisi(fileFullPath, false, $"Napravili smo DIB i presjek stanja nema gotvine da podignemo istu");
+                        }
+                    }
+                    catch (Exception ex) {
+                        await OdgovoriIObrisi(fileFullPath, true, $"Nismo uspijeli napraviti presjek stanja {ex.Message}");
+                        break;
+                    }
+
+                    
+
+
+
+                    break;
                 case "CASH_OUT":
                     var status = await _esir.StatusFiskalnogPrintera();
                     await OdgovoriIObrisi(fileFullPath, !(status?.MozeNastaviti ?? false), status?.Poruka ?? "Nepoznata greška sa ESIR-om");

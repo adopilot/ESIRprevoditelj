@@ -1,6 +1,7 @@
 ﻿@page "/counter"
 @using FiskalniPrevoditelj.Servisi
 @inject IPrinterService printService;
+@inject EsirDriver.FiskalPrevoditeljToEsir _engin;
 
 <h1>Counter</h1>
 
@@ -40,6 +41,14 @@
 <hr />
 <button class="btn btn-primary" @onclick="printPdf">Print pdf</button>
 <hr />
+<button class="btn btn-primary" @onclick="presjekStanja">Presjek stanja</button>
+<hr />
+<span>U kasi je kesa: @Kesa.ToString("0.00")</span>
+<hr />
+<button class="btn btn-primary" @onclick="withdraw">Izbaci gotovinu </button>
+<hr />
+<button class="btn btn-primary" @onclick="presjekStanjaPrint">Presjek stanja print </button>
+
 
 @code {
     private int currentCount = 0;
@@ -50,6 +59,8 @@
     private List<string> printeri { get; set; }
     private string odabraniPrinter { get; set; }
     private string odabraniPaperSize { get; set; }
+
+    public decimal Kesa { get; set; } = 0;
 
     protected override void OnInitialized()
     {
@@ -73,5 +84,24 @@
     private void printPdf()
     {
         printService.PrintBase64Image(base64Image, odabraniPrinter, odabraniPaperSize);
+    }
+    private async void presjekStanja()
+    {
+        var ado = await _engin._esir.PresjekStanja();
+        Kesa = ado.totalCash;
+        StateHasChanged();
+
+    }
+    private async void withdraw()
+    {
+        var ado = await _engin._esir.PodizanjeGotovine(Kesa);
+        Console.WriteLine(ado.Poruka);
+        StateHasChanged();
+    }
+    private async void presjekStanjaPrint()
+    {
+        var ado = await _engin._esir.PresjekStanjaPrint();
+        Console.WriteLine(ado.Poruka);
+        StateHasChanged();
     }
 }

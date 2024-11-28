@@ -107,7 +107,7 @@ namespace EsirDriver
                 case 1100:
                     return new EsirStatusCodeModel() { Code = code, Info = "Skladište 90% popunjeno", Opis = "Skladište koje se koristi za pohranu paketa za reviziju je 90% popunjeno. Vrijeme je za izvršenje revizije.", LogLevel = LogLevel.Warning };
                 case 1300:
-                    return new EsirStatusCodeModel() { Code = code, Info = "Smart kartica nije prisutna", Opis = "Sigurnosna kartica nije umetnuta u čitač pametnih kartica E-SDC", LogLevel = LogLevel.Warning };
+                    return new EsirStatusCodeModel() { Code = code, Info = "Smart kartica nije prisutna", Opis = "Sigurnosna kartica nije umetnuta u čitač pametnih kartica E-SDC", LogLevel = LogLevel.Error };
                 case 1400:
                     return new EsirStatusCodeModel() { Code = code, Info = "Potrebna je revizija", Opis = "Ukupni iznos prodaje i povrata dostigao je 75% SE limita. Vrijeme je za izvršenje revizije.", LogLevel = LogLevel.Warning };
                 case 1500:
@@ -416,11 +416,243 @@ namespace EsirDriver
             }
 
         }
-    
 
-        
 
-      public async Task<InvoiceResponseModel>  OstampajRacun(InvoiceModel invoiceRequestModel,string requestId = null )
+        public async Task<PorukaFiskalnogPrintera> DnevniIzvjestaj()
+        {
+            PorukaFiskalnogPrintera poruka = new PorukaFiskalnogPrintera();
+            if (ImamoLiConfig().IsError)
+            {
+                poruka = new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = false, LogLevel = LogLevel.Error, Poruka = $"Nemožemo unjeti gotivunu kada printer nije knifugrsan" };
+                PorukaEvent.Invoke(this, poruka);
+                return poruka;
+            }
+            try
+            {
+                
+
+                //var request = new HttpRequestMessage(HttpMethod.Delete, "api/financial/summary");
+
+
+
+
+
+                var response = await _httpClient.DeleteAsync("api/financial/summary");
+
+                var ado = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                    poruka = new PorukaFiskalnogPrintera() { IsError = false, MozeNastaviti = true, LogLevel = LogLevel.Information, Poruka = $"Napravili smo DIB" };
+
+                else
+                    poruka = new PorukaFiskalnogPrintera() { IsError = true, LogLevel = LogLevel.Error, MozeNastaviti = true, Poruka = $"DIB nam je pukao sa porukom {ado}" };
+
+            }
+            catch (Exception ex)
+            {
+                poruka = new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = true, LogLevel = LogLevel.Error, Poruka = $"Nismo upijeli napraviti DIB sa porukom {ex.Message} " };
+            }
+            PorukaEvent.Invoke(this, poruka);
+            return poruka;
+
+        }
+
+        public async Task<PorukaFiskalnogPrintera> PresjekStanjaPrint()
+        {
+
+            if (!ImamoLiConfig().MozeNastaviti)
+            {
+                return ImamoLiConfig();
+            }
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Post, "/api/financial/report/summary");
+
+                var model = new EsirPresjekStanjaPrintModel() { };
+
+                var json = JsonSerializer.Serialize(model, _jsonSerializerOptions);
+
+                var content = new StringContent(json, null, "application/json");
+                request.Content = content;
+
+                var response = await _httpClient.SendAsync(request);
+
+                string res = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return new PorukaFiskalnogPrintera() { IsError = false, MozeNastaviti = true, LogLevel = LogLevel.Debug, Poruka = "Ostampali smo presjek stanja" };
+                }
+                else
+                {
+                    try
+                    {
+                        EsirErrorResopnse esirErrorResopnse = JsonSerializer.Deserialize<EsirErrorResopnse>(res, _jsonSerializerOptions);
+                        return new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = true, LogLevel = LogLevel.Warning, Poruka = $"Nismo oštampali presjek stanja sa greškom {esirErrorResopnse.message}" };
+                    }
+                    catch
+                    {
+
+                    }
+
+                    return new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = true, LogLevel = LogLevel.Warning, Poruka = $"Nismo oštampali presjek stanja tekst sa greškom {res}" };
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                return new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = false, LogLevel = LogLevel.Error, Poruka = $"HTTP Greška kod štampanja presjeka stanja teksta {ex.Message}" };
+            }
+            catch (Exception ex)
+            {
+                return new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = false, LogLevel = LogLevel.Error, Poruka = $" Greška kod štampanja presjeka stanja  {ex.Message}" };
+
+
+            }
+
+
+        }
+
+            public async Task<EsirPresjekStanja> PresjekStanja()
+        {
+            try
+            {
+                if (ImamoLiConfig().IsError)
+                {
+                    PorukaEvent.Invoke(this, new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = false, LogLevel = LogLevel.Error, Poruka = $"Nemožemo štampati faktru kada printer nije knifugrsan" });
+                    throw new Exception("Fiskalni printer nije konfigursan");
+                }
+
+                
+
+
+                
+
+
+                var response = await _httpClient.GetAsync("/api/financial/summary");
+
+                string res = await response.Content.ReadAsStringAsync();
+
+
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    var lastInvoiceResponseModel = JsonSerializer.Deserialize<EsirPresjekStanja>(res, _jsonSerializerOptions);
+                    PorukaEvent.Invoke(this, new PorukaFiskalnogPrintera() { IsError = false, LogLevel = LogLevel.Information, MozeNastaviti = true, Poruka = $"Oštampali smo fiskalni račun" });
+                    return lastInvoiceResponseModel;
+                }
+                else
+                {
+                    EsirErrorResopnse esirErrorResopnse = JsonSerializer.Deserialize<EsirErrorResopnse>(res, _jsonSerializerOptions);
+
+
+
+                    throw new Exception(esirErrorResopnse?.message ?? "Greška u odgovru");
+
+                }
+
+
+
+
+
+
+
+
+            }
+            catch (HttpRequestException ex)
+            {
+                throw ex;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+
+            }
+
+        }
+        public async Task<PorukaFiskalnogPrintera> UnosGotovine(decimal iznos)
+        {
+            PorukaFiskalnogPrintera poruka = new PorukaFiskalnogPrintera();
+            if (ImamoLiConfig().IsError)
+            {
+                poruka = new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = false, LogLevel = LogLevel.Error, Poruka = $"Nemožemo unjeti gotivunu kada printer nije knifugrsan" };
+                PorukaEvent.Invoke(this,poruka);
+                return poruka;
+            }
+            try
+            {
+                Deposit deposit = new Deposit() { amount = iznos };
+
+                var request = new HttpRequestMessage(HttpMethod.Post, "/api/financial/deposit");
+
+
+
+                var json = JsonSerializer.Serialize(deposit, _jsonSerializerOptions);
+
+                var content = new StringContent(json, null, "application/json");
+                request.Content = content;
+
+                var response = await _httpClient.SendAsync(request);
+
+                var ado = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                    poruka = new PorukaFiskalnogPrintera() { IsError = false, MozeNastaviti = true, LogLevel = LogLevel.Information, Poruka = $"U ESIR smo deponovali depozit od: {iznos.ToString("0.00")} KM" };
+
+                else
+                    poruka = new PorukaFiskalnogPrintera() { IsError = true, LogLevel = LogLevel.Error, MozeNastaviti = true, Poruka = $"Nosmo dopunili gotovinu sa odgovorom {ado}" };
+
+            }
+            catch (Exception ex)
+            {
+                poruka = new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = true, LogLevel = LogLevel.Error, Poruka = $"Nismo upijeli unjeti gotovinu u ESIR sa porukom {ex.Message} " };
+            }
+            PorukaEvent.Invoke(this, poruka);
+            return poruka;
+
+        }
+
+        public async Task<PorukaFiskalnogPrintera> PodizanjeGotovine(decimal iznos)
+        {
+            PorukaFiskalnogPrintera poruka = new PorukaFiskalnogPrintera();
+            if (ImamoLiConfig().IsError)
+            {
+                poruka = new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = false, LogLevel = LogLevel.Error, Poruka = $"Nemožemo unjeti gotivunu kada printer nije knifugrsan" };
+                PorukaEvent.Invoke(this, poruka);
+                return poruka;
+            }
+            try
+            {
+                Deposit deposit = new Deposit() { amount = iznos };
+
+                var request = new HttpRequestMessage(HttpMethod.Post, "/api/financial/withdraw");
+
+
+
+                var json = JsonSerializer.Serialize(deposit, _jsonSerializerOptions);
+
+                var content = new StringContent(json, null, "application/json");
+                request.Content = content;
+
+                var response = await _httpClient.SendAsync(request);
+
+                var ado = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                    poruka = new PorukaFiskalnogPrintera() { IsError = false, MozeNastaviti = true, LogLevel = LogLevel.Information, Poruka = $"U ESIR smo deponovali depozit od: {iznos.ToString("0.00")} KM" };
+
+                else
+                    poruka = new PorukaFiskalnogPrintera() { IsError = true, LogLevel = LogLevel.Error, MozeNastaviti = true, Poruka = $"Nosmo dopunili gotovinu sa odgovorom {ado}" };
+
+            }
+            catch (Exception ex)
+            {
+                poruka = new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = true, LogLevel = LogLevel.Error, Poruka = $"Nismo upijeli unjeti gotovinu u ESIR sa porukom {ex.Message} " };
+            }
+            PorukaEvent.Invoke(this, poruka);
+            return poruka;
+
+        }
+
+        public async Task<InvoiceResponseModel>  OstampajRacun(InvoiceModel invoiceRequestModel,string requestId = null )
         {
             try
             {

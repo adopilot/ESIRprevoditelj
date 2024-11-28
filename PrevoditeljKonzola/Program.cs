@@ -14,9 +14,9 @@ namespace PrevoditeljKonzola
             //var prevo new EsirDriver.Modeli.EsirSettingsModel() { apiKey = "adoa" }
             var esirSettings = new EsirDriver.Modeli.EsirConfigModel() 
             {
-                apiKey = "5ead197a9fdf6600c82aff1a803a1625sex", 
-                pin = 2011, 
-                webserverAddress = "http://172.16.0.9:3566", 
+                apiKey = "43278f37da7a7e3aa20d8daa6e4a6193", 
+                pin = 3132, 
+                webserverAddress = "http://172.16.23.6:3566/", 
                 authorizeLocalClients = true, authorizeRemoteClients = true, 
                 OperationMode = EsirDriver.Modeli.esir.InvoiceType.Normal, 
                 
@@ -79,8 +79,8 @@ namespace PrevoditeljKonzola
                         
                     break;
                 case "6":
-                    var response =await servis._esir.LastInvoice(EsirDriver.Modeli.esir.ReceiptLayoutType.Invoice, EsirDriver.Modeli.esir.ReceptImageFormat.Pdf, true);
-                    Console.WriteLine($"Response ima broj fakture: {(response?.invoiceNumber??"nema broja fakture")}");
+                    //var response =await servis._esir.LastInvoice(EsirDriver.Modeli.esir.ReceiptLayoutType.Invoice, EsirDriver.Modeli.esir.ReceptImageFormat.Pdf, true);
+                    //Console.WriteLine($"Response ima broj fakture: {(response?.invoiceNumber??"nema broja fakture")}");
                     break;
                 case "0":
                     servis.Stop();
