@@ -23,7 +23,7 @@ namespace EsirDriver.Modeli
         [Required(ErrorMessage = "Poreska stopa je obavzna")]
         [MinLength(1, ErrorMessage = "Samoj jedna poreska stopa je dozvoljnja")]
         [StringLength(1, ErrorMessage = "Samo jedna poreka stopa je dozvoljena ")]
-        public string PodrazumjevanaPoreskaStopa { get; set; } = "F";
+        public string PodrazumjevanaPoreskaStopa { get; set; } = "Е";
         public string DefSklSifra { get; set; } = "000";
     }
 

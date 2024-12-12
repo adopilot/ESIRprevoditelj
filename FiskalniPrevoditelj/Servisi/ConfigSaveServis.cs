@@ -109,7 +109,7 @@ namespace FiskalniPrevoditelj.Servisi
             model.AutomaticallyCloseRecept = true;
 
             model.DefSklSifra = await SecureStorage.Default.GetAsync("DefSklSifra") ?? "000";
-            model.PodrazumjevanaPoreskaStopa = await SecureStorage.Default.GetAsync("PodrazumjevanaPoreskaStopa") ?? "F";
+            model.PodrazumjevanaPoreskaStopa = await SecureStorage.Default.GetAsync("PodrazumjevanaPoreskaStopa") ?? "Е";
 
             model.Enabled = bool.Parse(await SecureStorage.Default.GetAsync("PrevoditeljEnabled") ?? "false");
 
@@ -140,7 +140,7 @@ namespace FiskalniPrevoditelj.Servisi
 
                 await SecureStorage.Default.SetAsync("DefSklSifra", model.DefSklSifra ?? "000");
 
-                await SecureStorage.Default.SetAsync("PodrazumjevanaPoreskaStopa", model.PodrazumjevanaPoreskaStopa ?? "F");
+                await SecureStorage.Default.SetAsync("PodrazumjevanaPoreskaStopa", model.PodrazumjevanaPoreskaStopa ?? "Е");
 
                 await SecureStorage.Default.SetAsync("PrevoditeljEnabled", model.Enabled.ToString() ?? "false");
 

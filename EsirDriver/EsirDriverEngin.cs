@@ -267,7 +267,7 @@ namespace EsirDriver
                     return ImamoLiConfig();
                 }
                 var request = new HttpRequestMessage(HttpMethod.Post, "/api/pin");
-                request.Content = new StringContent(pin.ToString()); 
+                request.Content = new StringContent(pin.ToString("D4")); 
                 var response = await _httpClient.SendAsync(request);
                 var poruka = await response.Content.ReadAsStringAsync();
 
