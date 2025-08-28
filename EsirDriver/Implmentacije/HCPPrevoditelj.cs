@@ -1,17 +1,17 @@
-﻿using EsirDriver.Modeli;
+﻿using EsirDriver.JsonConverteri;
+using EsirDriver.Modeli;
+using EsirDriver.Modeli.esir;
+using EsirDriver.Modeli.hcp;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using EsirDriver.Modeli.hcp;
 using System.Xml;
-using System.IO;
-using System.Globalization;
-using EsirDriver.Modeli.esir;
-
-using System.Xml.Serialization;
 using System.Xml.Linq;
+using System.Xml.Serialization;
 
 namespace EsirDriver.Implmentacije
 {
@@ -35,7 +35,7 @@ namespace EsirDriver.Implmentacije
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             try
             {
-                encoding = Encoding.GetEncoding(prevoditeljSettingModel?.EncodingName ?? "windows-1250");
+                 encoding = Encoding.GetEncoding(prevoditeljSettingModel?.EncodingName ?? "windows-1250");
 
                 var files = Directory.GetFiles(_prevoditeljSettingModel.PathInputFiles)?.ToList() ?? new List<string>();
                 foreach (var file in files)
@@ -66,11 +66,11 @@ namespace EsirDriver.Implmentacije
 
             foreach (var file in files)
             {
-                if (Path.GetFileName(file.ToLower()) == "cmd.ok")
+                if (file.Contains("cmd.ok", StringComparison.OrdinalIgnoreCase) || file.Contains("snd.",StringComparison.OrdinalIgnoreCase) )
                 {
 
                     imamCmdOkFile = true;
-                    if (files.Count == 1)
+                    if (files.Count == 1 && file.Contains("cmd.ok", StringComparison.OrdinalIgnoreCase))
                     {
                         deleteCmdOkFile();
                         return new PorukaFiskalnogPrintera() { LogLevel = LogLevel.Debug, Poruka = "U folderu sam našao samo cmd.ok i brišem je ", MozeNastaviti = true };
@@ -106,7 +106,8 @@ namespace EsirDriver.Implmentacije
                     var footerOdgovor = await OdradiFooterDatoteku(fileFullPath);
                     PorukaEvent.Invoke(this, footerOdgovor);
                 }
-                else if (file.StartsWith("txt"))
+                
+                else if (file.StartsWith("txt") || file.StartsWith("snd"))
                 {
                     var txtOdgovor = await OdradiTxtDatoteku(fileFullPath);
                     PorukaEvent.Invoke(this, txtOdgovor);
@@ -513,8 +514,16 @@ namespace EsirDriver.Implmentacije
                     //Ovo može a i ne mora kod nas nema smisla jer je ovo id kojeg niko neće vidjeti:
                     //gtin = (red?.Brc??"0").PadLeft(13,'0'),
 
-                    invoiceRequest.items.Add(new ItemModel() { discount = 0, discountAmount = 0,  labels = new List<string>() { _prevoditeljSettingModel.PodrazumjevanaPoreskaStopa }, name=red.Dsc, quantity=red.Amn, unitPrice=red.Prc 
-                        , totalAmount= Math.Round(red.Prc*red.Amn,2) } );
+                    invoiceRequest.items.Add(new ItemModel() { 
+                        //gtin=red.Brc.PadLeft(8,'0'), 
+                        discount = 0, 
+                        discountAmount = 0,  
+                        labels = new List<string>() { _prevoditeljSettingModel.PodrazumjevanaPoreskaStopa }, 
+                        name=red.Dsc, 
+                        quantity=red.Amn, 
+                        unitPrice=red.Prc, 
+                        totalAmount= Math.Round(red.Prc*red.Amn,2) 
+                    } );
                 }
                 foreach (var red in payStavke)
                 {
@@ -695,6 +704,7 @@ namespace EsirDriver.Implmentacije
         {
             try
             {
+                /*stara verzija do 28.20.25 -> sada je to kopitolo odariod 
                 string xmlContent;
                 using (StreamReader sr = new StreamReader(fileFullPath, encoding))
                 {
@@ -705,8 +715,12 @@ namespace EsirDriver.Implmentacije
 
                 if (doc==null  ||doc.DocumentElement ==null)
                     return new PorukaFiskalnogPrintera() { IsError=false, LogLevel = LogLevel.Warning, MozeNastaviti=true, Poruka="Nisam učitao txt comandu HCP doc mi je null" };
+                */
+                XmlDocument doc = await XmlFileLoader.LoadXmlAsync(fileFullPath);
 
-                
+                if (doc == null || doc.DocumentElement == null)
+                    return new PorukaFiskalnogPrintera() { IsError = false, LogLevel = LogLevel.Warning, MozeNastaviti = true, Poruka = "Nisam učitao txt comandu HCP doc mi je null" };
+
                 XmlElement root = doc.DocumentElement;
 
 
@@ -723,6 +737,7 @@ namespace EsirDriver.Implmentacije
 
                         if (!string.IsNullOrEmpty(text))
                             esirDirektnaStampaModel.textLines.Add(text);
+                            nefiskalniTekst += text;
 
                     }
                 }
@@ -731,7 +746,7 @@ namespace EsirDriver.Implmentacije
                 PorukaEvent.Invoke(this, new PorukaFiskalnogPrintera()
                 {
                     LogLevel = LogLevel.Debug,
-                    Poruka= "Nefiskalni tekst je: \n" + nefiskalniTekst,
+                    Poruka= "Nefiskalni tekst je: " + nefiskalniTekst,
                      IsError=false,
                      MozeNastaviti = true
                 });

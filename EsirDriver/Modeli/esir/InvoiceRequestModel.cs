@@ -84,11 +84,9 @@ namespace EsirDriver.Modeli.esir
         /// vreme kada je izdat referentni dokument (vreme kada je fiskalizovan račun na koji se referencira ovaj račun)
         /// </summary>
         public DateTime? referentDocumentDT { get; set; }
-
         public bool print { get; set; } = true;
         public string email { get; set; }
-        public bool renderReceiptImage { get; set; }
-
+        public bool renderReceiptImage { get; set;} = false; 
         public DateTime? dateAndTimeOfIssue { get; set; }
         /// <summary>
         /// iznos avansne uplate, kod automatskog izdavanja konačnog računa.

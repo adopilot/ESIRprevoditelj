@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Json;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -48,7 +49,65 @@ namespace EsirDriver
         {
             return esirCurrent?.uid??"NEPOZNAT";
         }
+        public async Task<PorukaFiskalnogPrintera> SetReceiptPrintGtin(bool printBarcode)
+        {
+            if (!ImamoLiConfig().MozeNastaviti)
+            {
+                return ImamoLiConfig();
+            }
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Post, "/api/settings");
 
+                var model = new ReceiptRequest
+                {
+                    receiptPrintGtin = printBarcode
+                };
+
+
+
+                var json = JsonSerializer.Serialize(model, _jsonSerializerOptions);
+
+                var content = new StringContent(json, null, "application/json");
+                request.Content = content;
+
+                var response = await _httpClient.SendAsync(request);
+
+                string res = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return new PorukaFiskalnogPrintera() { IsError = false, MozeNastaviti = true, LogLevel = LogLevel.Debug, Poruka = $"{(!printBarcode ?"Esir neće štapati barkodove na računu ":"Esir će štampati barkodove na računu")}" };
+                }
+                else
+                {
+                    try
+                    {
+                        EsirErrorResopnse esirErrorResopnse = JsonSerializer.Deserialize<EsirErrorResopnse>(res, _jsonSerializerOptions);
+                        return new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = true, LogLevel = LogLevel.Warning, Poruka = $"Nismo udesili receiptPrintGtin property na printeru sa gereškom  {esirErrorResopnse.message}" };
+                    }
+                    catch (Exception exxx)
+                    {
+                        return new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = true, LogLevel = LogLevel.Warning, Poruka = $"Nismo udesili receiptPrintGtin property na printeru sa gereškom  {exxx.Message}" };
+
+                    }
+
+                    return new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = true, LogLevel = LogLevel.Warning, Poruka = $"Nismo udesili receiptPrintGtin property" };
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                return new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = false, LogLevel = LogLevel.Error, Poruka = $"HTTP Greška kod šitmanja receiptPrintGtin property   {ex.Message}" };
+            }
+            catch (Exception ex)
+            {
+                return new PorukaFiskalnogPrintera() { IsError = true, MozeNastaviti = false, LogLevel = LogLevel.Error, Poruka = $"HTTP Greška kod šitmanja receiptPrintGtin property {ex.Message}" };
+
+
+            }
+
+
+        }
         public async Task<PorukaFiskalnogPrintera> Konfigurisi(EsirConfigModel esirConfigModel)
         {
             try
@@ -548,14 +607,6 @@ namespace EsirDriver
                     throw new Exception(esirErrorResopnse?.message ?? "Greška u odgovru");
 
                 }
-
-
-
-
-
-
-
-
             }
             catch (HttpRequestException ex)
             {

@@ -126,8 +126,9 @@ namespace EsirDriver
                         OnMessageReceived(poruka);
                         return poruka;
                 }
+                var gtinSetInfo = await _esir.SetReceiptPrintGtin(false);
+                OnMessageReceived(gtinSetInfo);
 
-                
 
 
                 if (tempDoesItNeedToWork)
